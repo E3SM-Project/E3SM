@@ -27,7 +27,7 @@ module dynHarvestMod
   use VegetationDataType    , only : veg_cs, veg_cf, veg_ns, veg_nf  
   use topounit_varcon       , only : max_topounits
   use VegetationDataType    , only : veg_ps, veg_pf
-  use elm_varctl            , only : use_cn, use_fates, iulog
+  use elm_varctl            , only : use_cn, use_fates, iulog, use_cropman
   use FatesConstantsMod      , only : hlm_harvest_area_fraction
   use FatesConstantsMod      , only : hlm_harvest_carbon
 
@@ -558,6 +558,9 @@ contains
         harvest_c_to_litr_met_c          =>    col_cf%harvest_c_to_litr_met_c              , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter metabolic pool (gC/m3/s)
         harvest_c_to_litr_cel_c          =>    col_cf%harvest_c_to_litr_cel_c              , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter cellulose pool (gC/m3/s)
         harvest_c_to_litr_lig_c          =>    col_cf%harvest_c_to_litr_lig_c              , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to litter lignin pool (gC/m3/s)
+        harvest_c_to_residue_met_c       =>    col_cf%harvest_c_to_residue_met_c         , & ! InOut:  [real(r8) (:)   ]  C fluxes associated with harvest to residue metabolic pool (gC/m2/s)
+        harvest_c_to_residue_cel_c       =>    col_cf%harvest_c_to_residue_cel_c         , & ! InOut:  [real(r8) (:)   ]  C fluxes associated with harvest to residue cellulose pool (gC/m2/s)
+        harvest_c_to_residue_lig_c       =>    col_cf%harvest_c_to_residue_lig_c         , & ! InOut:  [real(r8) (:)   ]  C fluxes associated with harvest to residue lignin pool (gC/m2/s)
         harvest_c_to_cwdc                =>    col_cf%harvest_c_to_cwdc                    , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to CWD pool (gC/m3/s)
         
         hrv_leafn_to_litter              =>    veg_nf%hrv_leafn_to_litter              , & ! Input:  [real(r8) (:)   ]                                                    
@@ -586,6 +589,9 @@ contains
         harvest_n_to_litr_met_n          =>    col_nf%harvest_n_to_litr_met_n            , & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with harvest to litter metabolic pool (gN/m3/s)
         harvest_n_to_litr_cel_n          =>    col_nf%harvest_n_to_litr_cel_n            , & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with harvest to litter cellulose pool (gN/m3/s)
         harvest_n_to_litr_lig_n          =>    col_nf%harvest_n_to_litr_lig_n            , & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with harvest to litter lignin pool (gN/m3/s)
+        harvest_n_to_residue_met_n       =>    col_nf%harvest_n_to_residue_met_n         , & ! InOut:  [real(r8) (:)   ]  N fluxes associated with harvest to residue metabolic pool (gN/m2/s)
+        harvest_n_to_residue_cel_n       =>    col_nf%harvest_n_to_residue_cel_n         , & ! InOut:  [real(r8) (:)   ]  N fluxes associated with harvest to residue cellulose pool (gN/m2/s)
+        harvest_n_to_residue_lig_n       =>    col_nf%harvest_n_to_residue_lig_n         , & ! InOut:  [real(r8) (:)   ]  N fluxes associated with harvest to residue lignin pool (gN/m2/s)
         harvest_n_to_cwdn                =>    col_nf%harvest_n_to_cwdn                  ,  & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with harvest to CWD pool (gN/m3/s)
         
         ! add P harvest fluxes 
@@ -615,11 +621,14 @@ contains
         harvest_p_to_litr_met_p          =>    col_pf%harvest_p_to_litr_met_p            , & ! InOut:  [real(r8) (:,:) ]  P fluxes associated with harvest to litter metabolic pool (gP/m3/s)
         harvest_p_to_litr_cel_p          =>    col_pf%harvest_p_to_litr_cel_p            , & ! InOut:  [real(r8) (:,:) ]  P fluxes associated with harvest to litter cellulose pool (gP/m3/s)
         harvest_p_to_litr_lig_p          =>    col_pf%harvest_p_to_litr_lig_p            , & ! InOut:  [real(r8) (:,:) ]  P fluxes associated with harvest to litter lignin pool (gP/m3/s)
+        harvest_p_to_residue_met_p       =>    col_pf%harvest_p_to_residue_met_p         , & ! InOut:  [real(r8) (:)   ]  P fluxes associated with harvest to residue metabolic pool (gP/m2/s)
+        harvest_p_to_residue_cel_p       =>    col_pf%harvest_p_to_residue_cel_p         , & ! InOut:  [real(r8) (:)   ]  P fluxes associated with harvest to residue cellulose pool (gP/m2/s)
+        harvest_p_to_residue_lig_p       =>    col_pf%harvest_p_to_residue_lig_p         , & ! InOut:  [real(r8) (:)   ]  P fluxes associated with harvest to residue lignin pool (gP/m2/s)
         harvest_p_to_cwdp                =>    col_pf%harvest_p_to_cwdp                    & ! InOut:  [real(r8) (:,:) ]  P fluxes associated with harvest to CWD pool (gP/m3/s)
 
         )
 
-     do j = 1, nlevdecomp
+     if (use_cropman) then
         do pi = 1,maxpatch_pft
            do fc = 1,num_soilc
               c = filter_soilc(fc)
@@ -629,189 +638,396 @@ contains
 
                  if (veg_pp%active(p)) then
 
-                    ! leaf harvest mortality carbon fluxes
-                    harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
-                         hrv_leafc_to_litter(p) * lf_flab(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                    harvest_c_to_litr_cel_c(c,j) = harvest_c_to_litr_cel_c(c,j) + &
-                         hrv_leafc_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                    harvest_c_to_litr_lig_c(c,j) = harvest_c_to_litr_lig_c(c,j) + &
-                         hrv_leafc_to_litter(p) * lf_flig(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+                   ! leaf harvest mortality carbon fluxes
+                   harvest_c_to_residue_met_c(c) = harvest_c_to_residue_met_c(c) + &
+                        hrv_leafc_to_litter(p) * lf_flab(ivt(p)) * wtcol(p)
+                   harvest_c_to_residue_cel_c(c) = harvest_c_to_residue_cel_c(c) + &
+                        hrv_leafc_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p)
+                   harvest_c_to_residue_lig_c(c) = harvest_c_to_residue_lig_c(c) + &
+                        hrv_leafc_to_litter(p) * lf_flig(ivt(p)) * wtcol(p)
 
-                    ! fine root harvest mortality carbon fluxes
-                    harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
-                         hrv_frootc_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * froot_prof(p,j)
-                    harvest_c_to_litr_cel_c(c,j) = harvest_c_to_litr_cel_c(c,j) + &
-                         hrv_frootc_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
-                    harvest_c_to_litr_lig_c(c,j) = harvest_c_to_litr_lig_c(c,j) + &
-                         hrv_frootc_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                   ! storage harvest mortality carbon fluxes
+                   harvest_c_to_residue_met_c(c) = harvest_c_to_residue_met_c(c) + &
+                        hrv_leafc_storage_to_litter(p) * wtcol(p) + &
+                        hrv_livestemc_storage_to_litter(p) * wtcol(p) + &
+                        hrv_deadstemc_storage_to_litter(p) * wtcol(p) + &
+                        hrv_gresp_storage_to_litter(p) * wtcol(p) + &
+                        hrv_cpool_to_litter(p) * wtcol(p)
 
-                    ! wood harvest mortality carbon fluxes
-                    harvest_c_to_cwdc(c,j)  = harvest_c_to_cwdc(c,j)  + &
-                         hrv_livestemc_to_litter(p)  * wtcol(p) * stem_prof(p,j) 
-                    harvest_c_to_cwdc(c,j) = harvest_c_to_cwdc(c,j) + &
-                         hrv_livecrootc_to_litter(p) * wtcol(p) * croot_prof(p,j)
-                    harvest_c_to_cwdc(c,j) = harvest_c_to_cwdc(c,j) + &
-                         hrv_deadcrootc_to_litter(p) * wtcol(p) * croot_prof(p,j) 
-
-                    ! storage harvest mortality carbon fluxes
-                    harvest_c_to_litr_met_c(c,j)      = harvest_c_to_litr_met_c(c,j)      + &
-                         hrv_leafc_storage_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
-                    harvest_c_to_litr_met_c(c,j)     = harvest_c_to_litr_met_c(c,j)     + &
-                         hrv_frootc_storage_to_litter(p)     * wtcol(p) * froot_prof(p,j)
-                    harvest_c_to_litr_met_c(c,j)  = harvest_c_to_litr_met_c(c,j)  + &
-                         hrv_livestemc_storage_to_litter(p)  * wtcol(p) * stem_prof(p,j)
-                    harvest_c_to_litr_met_c(c,j)  = harvest_c_to_litr_met_c(c,j)  + &
-                         hrv_deadstemc_storage_to_litter(p)  * wtcol(p) * stem_prof(p,j)
-                    harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
-                         hrv_livecrootc_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
-                    harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
-                         hrv_deadcrootc_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
-                    harvest_c_to_litr_met_c(c,j)      = harvest_c_to_litr_met_c(c,j)      + &
-                         hrv_gresp_storage_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
-                    harvest_c_to_litr_met_c(c,j)      = harvest_c_to_litr_met_c(c,j)      + &
-                         hrv_cpool_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+                   ! transfer harvest mortality carbon fluxes
+                   harvest_c_to_residue_met_c(c) = harvest_c_to_residue_met_c(c) + &
+                        hrv_leafc_xfer_to_litter(p) * wtcol(p) + &
+                        hrv_livestemc_xfer_to_litter(p) * wtcol(p) + &
+                        hrv_deadstemc_xfer_to_litter(p) * wtcol(p) + &
+                        hrv_gresp_xfer_to_litter(p) * wtcol(p)
 
 
-                    ! transfer harvest mortality carbon fluxes
-                    harvest_c_to_litr_met_c(c,j)      = harvest_c_to_litr_met_c(c,j)      + &
-                         hrv_leafc_xfer_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
-                    harvest_c_to_litr_met_c(c,j)     = harvest_c_to_litr_met_c(c,j)     + &
-                         hrv_frootc_xfer_to_litter(p)     * wtcol(p) * froot_prof(p,j)
-                    harvest_c_to_litr_met_c(c,j)  = harvest_c_to_litr_met_c(c,j)  + &
-                         hrv_livestemc_xfer_to_litter(p)  * wtcol(p) * stem_prof(p,j)
-                    harvest_c_to_litr_met_c(c,j)  = harvest_c_to_litr_met_c(c,j)  + &
-                         hrv_deadstemc_xfer_to_litter(p)  * wtcol(p) * stem_prof(p,j)
-                    harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
-                         hrv_livecrootc_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
-                    harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
-                         hrv_deadcrootc_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
-                    harvest_c_to_litr_met_c(c,j)      = harvest_c_to_litr_met_c(c,j)      + &
-                         hrv_gresp_xfer_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+                   ! leaf harvest mortality nitrogen fluxes
+                   harvest_n_to_residue_met_n(c) = harvest_n_to_residue_met_n(c) + &
+                        hrv_leafn_to_litter(p) * lf_flab(ivt(p)) * wtcol(p)
+                   harvest_n_to_residue_cel_n(c) = harvest_n_to_residue_cel_n(c) + &
+                        hrv_leafn_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p)
+                   harvest_n_to_residue_lig_n(c) = harvest_n_to_residue_lig_n(c) + &
+                        hrv_leafn_to_litter(p) * lf_flig(ivt(p)) * wtcol(p)
 
-                    ! leaf harvest mortality nitrogen fluxes
-                    harvest_n_to_litr_met_n(c,j) = harvest_n_to_litr_met_n(c,j) + &
-                         hrv_leafn_to_litter(p) * lf_flab(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                    harvest_n_to_litr_cel_n(c,j) = harvest_n_to_litr_cel_n(c,j) + &
-                         hrv_leafn_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                    harvest_n_to_litr_lig_n(c,j) = harvest_n_to_litr_lig_n(c,j) + &
-                         hrv_leafn_to_litter(p) * lf_flig(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+                   ! retranslocated N pool harvest mortality fluxes
+                   harvest_n_to_residue_met_n(c) = harvest_n_to_residue_met_n(c) + &
+                        hrv_retransn_to_litter(p) * wtcol(p) + &
+                        hrv_npool_to_litter(p) * wtcol(p)
 
-                    ! fine root litter nitrogen fluxes
-                    harvest_n_to_litr_met_n(c,j) = harvest_n_to_litr_met_n(c,j) + &
-                         hrv_frootn_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * froot_prof(p,j)
-                    harvest_n_to_litr_cel_n(c,j) = harvest_n_to_litr_cel_n(c,j) + &
-                         hrv_frootn_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
-                    harvest_n_to_litr_lig_n(c,j) = harvest_n_to_litr_lig_n(c,j) + &
-                         hrv_frootn_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                   ! storage harvest mortality nitrogen fluxes
+                   harvest_n_to_residue_met_n(c) = harvest_n_to_residue_met_n(c) + &
+                        hrv_leafn_storage_to_litter(p) * wtcol(p) + &
+                        hrv_livestemn_storage_to_litter(p) * wtcol(p) + &
+                        hrv_deadstemn_storage_to_litter(p) * wtcol(p)
 
-                    ! wood harvest mortality nitrogen fluxes
-                    harvest_n_to_cwdn(c,j)  = harvest_n_to_cwdn(c,j)  + &
-                         hrv_livestemn_to_litter(p)  * wtcol(p) * stem_prof(p,j)
-                    harvest_n_to_cwdn(c,j) = harvest_n_to_cwdn(c,j) + &
-                         hrv_livecrootn_to_litter(p) * wtcol(p) * croot_prof(p,j)
-                    harvest_n_to_cwdn(c,j) = harvest_n_to_cwdn(c,j) + &
-                         hrv_deadcrootn_to_litter(p) * wtcol(p) * croot_prof(p,j)
-
-                    ! retranslocated N pool harvest mortality fluxes
-                    harvest_n_to_litr_met_n(c,j) = harvest_n_to_litr_met_n(c,j) + &
-                         hrv_retransn_to_litter(p) * wtcol(p) * leaf_prof(p,j)
-                    harvest_n_to_litr_met_n(c,j) = harvest_n_to_litr_met_n(c,j) + &
-                         hrv_npool_to_litter(p) * wtcol(p) * leaf_prof(p,j)
-
-                    ! storage harvest mortality nitrogen fluxes
-                    harvest_n_to_litr_met_n(c,j)      = harvest_n_to_litr_met_n(c,j)      + &
-                         hrv_leafn_storage_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
-                    harvest_n_to_litr_met_n(c,j)     = harvest_n_to_litr_met_n(c,j)     + &
-                         hrv_frootn_storage_to_litter(p)     * wtcol(p) * froot_prof(p,j)
-                    harvest_n_to_litr_met_n(c,j)  = harvest_n_to_litr_met_n(c,j)  + &
-                         hrv_livestemn_storage_to_litter(p)  * wtcol(p) * stem_prof(p,j)
-                    harvest_n_to_litr_met_n(c,j)  = harvest_n_to_litr_met_n(c,j)  + &
-                         hrv_deadstemn_storage_to_litter(p)  * wtcol(p) * stem_prof(p,j)
-                    harvest_n_to_litr_met_n(c,j) = harvest_n_to_litr_met_n(c,j) + &
-                         hrv_livecrootn_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
-                    harvest_n_to_litr_met_n(c,j) = harvest_n_to_litr_met_n(c,j) + &
-                         hrv_deadcrootn_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
-
-                    ! transfer harvest mortality nitrogen fluxes
-                    harvest_n_to_litr_met_n(c,j)      = harvest_n_to_litr_met_n(c,j)      + &
-                         hrv_leafn_xfer_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
-                    harvest_n_to_litr_met_n(c,j)     = harvest_n_to_litr_met_n(c,j)     + &
-                         hrv_frootn_xfer_to_litter(p)     * wtcol(p) * froot_prof(p,j)
-                    harvest_n_to_litr_met_n(c,j)  = harvest_n_to_litr_met_n(c,j)  + &
-                         hrv_livestemn_xfer_to_litter(p)  * wtcol(p) * stem_prof(p,j)
-                    harvest_n_to_litr_met_n(c,j)  = harvest_n_to_litr_met_n(c,j)  + &
-                         hrv_deadstemn_xfer_to_litter(p)  * wtcol(p) * stem_prof(p,j)
-                    harvest_n_to_litr_met_n(c,j) = harvest_n_to_litr_met_n(c,j) + &
-                         hrv_livecrootn_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
-                    harvest_n_to_litr_met_n(c,j) = harvest_n_to_litr_met_n(c,j) + &
-                         hrv_deadcrootn_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                   ! transfer harvest mortality nitrogen fluxes
+                   harvest_n_to_residue_met_n(c) = harvest_n_to_residue_met_n(c) + &
+                        hrv_leafn_xfer_to_litter(p) * wtcol(p) + &
+                        hrv_livestemn_xfer_to_litter(p) * wtcol(p) + &
+                        hrv_deadstemn_xfer_to_litter(p) * wtcol(p)
 
 
-                    ! leaf harvest mortality phosphorus fluxes
-                    harvest_p_to_litr_met_p(c,j) = harvest_p_to_litr_met_p(c,j) + &
-                         hrv_leafp_to_litter(p) * lf_flab(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                    harvest_p_to_litr_cel_p(c,j) = harvest_p_to_litr_cel_p(c,j) + &
-                         hrv_leafp_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                    harvest_p_to_litr_lig_p(c,j) = harvest_p_to_litr_lig_p(c,j) + &
-                         hrv_leafp_to_litter(p) * lf_flig(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+                   ! leaf harvest mortality phosphorus fluxes
+                   harvest_p_to_residue_met_p(c) = harvest_p_to_residue_met_p(c) + &
+                        hrv_leafp_to_litter(p) * lf_flab(ivt(p)) * wtcol(p)
+                   harvest_p_to_residue_cel_p(c) = harvest_p_to_residue_cel_p(c) + &
+                        hrv_leafp_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p)
+                   harvest_p_to_residue_lig_p(c) = harvest_p_to_residue_lig_p(c) + &
+                        hrv_leafp_to_litter(p) * lf_flig(ivt(p)) * wtcol(p)
 
-                    ! fine root litter phosphorus fluxes
-                    harvest_p_to_litr_met_p(c,j) = harvest_p_to_litr_met_p(c,j) + &
-                         hrv_frootp_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * froot_prof(p,j)
-                    harvest_p_to_litr_cel_p(c,j) = harvest_p_to_litr_cel_p(c,j) + &
-                         hrv_frootp_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
-                    harvest_p_to_litr_lig_p(c,j) = harvest_p_to_litr_lig_p(c,j) + &
-                         hrv_frootp_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                   ! retranslocated phosphorus pool harvest mortality fluxes
+                   harvest_p_to_residue_met_p(c) = harvest_p_to_residue_met_p(c) + &
+                        hrv_retransp_to_litter(p) * wtcol(p) + &
+                        hrv_ppool_to_litter(p) * wtcol(p)
 
-                    ! wood harvest mortality phosphorus fluxes
-                    harvest_p_to_cwdp(c,j)  = harvest_p_to_cwdp(c,j)  + &
-                         hrv_livestemp_to_litter(p)  * wtcol(p) * stem_prof(p,j)
-                    harvest_p_to_cwdp(c,j) = harvest_p_to_cwdp(c,j) + &
-                         hrv_livecrootp_to_litter(p) * wtcol(p) * croot_prof(p,j)
-                    harvest_p_to_cwdp(c,j) = harvest_p_to_cwdp(c,j) + &
-                         hrv_deadcrootp_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                   ! storage harvest mortality phosphorus fluxes
+                   harvest_p_to_residue_met_p(c) = harvest_p_to_residue_met_p(c) + &
+                        hrv_leafp_storage_to_litter(p) * wtcol(p) + &
+                        hrv_livestemp_storage_to_litter(p) * wtcol(p) + &
+                        hrv_deadstemp_storage_to_litter(p) * wtcol(p)
 
-                    ! retranslocated phosphorus pool harvest mortality fluxes
-                    harvest_p_to_litr_met_p(c,j) = harvest_p_to_litr_met_p(c,j) + &
-                         hrv_retransp_to_litter(p) * wtcol(p) * leaf_prof(p,j)
-                    harvest_p_to_litr_met_p(c,j) = harvest_p_to_litr_met_p(c,j) + &
-                         hrv_ppool_to_litter(p) * wtcol(p) * leaf_prof(p,j)
-
-                    ! storage harvest mortality phosphorus fluxes
-                    harvest_p_to_litr_met_p(c,j)      = harvest_p_to_litr_met_p(c,j)      + &
-                         hrv_leafp_storage_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
-                    harvest_p_to_litr_met_p(c,j)     = harvest_p_to_litr_met_p(c,j)     + &
-                         hrv_frootp_storage_to_litter(p)     * wtcol(p) * froot_prof(p,j)
-                    harvest_p_to_litr_met_p(c,j)  = harvest_p_to_litr_met_p(c,j)  + &
-                         hrv_livestemp_storage_to_litter(p)  * wtcol(p) * stem_prof(p,j)
-                    harvest_p_to_litr_met_p(c,j)  = harvest_p_to_litr_met_p(c,j)  + &
-                         hrv_deadstemp_storage_to_litter(p)  * wtcol(p) * stem_prof(p,j)
-                    harvest_p_to_litr_met_p(c,j) = harvest_p_to_litr_met_p(c,j) + &
-                         hrv_livecrootp_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
-                    harvest_p_to_litr_met_p(c,j) = harvest_p_to_litr_met_p(c,j) + &
-                         hrv_deadcrootp_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
-
-                    ! transfer harvest mortality phosphorus fluxes
-                    harvest_p_to_litr_met_p(c,j)      = harvest_p_to_litr_met_p(c,j)      + &
-                         hrv_leafp_xfer_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
-                    harvest_p_to_litr_met_p(c,j)     = harvest_p_to_litr_met_p(c,j)     + &
-                         hrv_frootp_xfer_to_litter(p)     * wtcol(p) * froot_prof(p,j)
-                    harvest_p_to_litr_met_p(c,j)  = harvest_p_to_litr_met_p(c,j)  + &
-                         hrv_livestemp_xfer_to_litter(p)  * wtcol(p) * stem_prof(p,j)
-                    harvest_p_to_litr_met_p(c,j)  = harvest_p_to_litr_met_p(c,j)  + &
-                         hrv_deadstemp_xfer_to_litter(p)  * wtcol(p) * stem_prof(p,j)
-                    harvest_p_to_litr_met_p(c,j) = harvest_p_to_litr_met_p(c,j) + &
-                         hrv_livecrootp_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
-                    harvest_p_to_litr_met_p(c,j) = harvest_p_to_litr_met_p(c,j) + &
-                         hrv_deadcrootp_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
-
+                   ! transfer harvest mortality phosphorus fluxes
+                   harvest_p_to_residue_met_p(c) = harvest_p_to_residue_met_p(c) + &
+                        hrv_leafp_xfer_to_litter(p) * wtcol(p) + &
+                        hrv_livestemp_xfer_to_litter(p) * wtcol(p) + &
+                        hrv_deadstemp_xfer_to_litter(p) * wtcol(p)
                  end if
               end if
 
            end do
-
         end do
-     end do
+
+        do j = 1, nlevdecomp
+           do pi = 1,maxpatch_pft
+              do fc = 1,num_soilc
+                 c = filter_soilc(fc)
+
+                 if (pi <=  col_pp%npfts(c)) then
+                    p = col_pp%pfti(c) + pi - 1
+
+                    if (veg_pp%active(p)) then
+
+                       ! fine root harvest mortality carbon fluxes
+                       harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                            hrv_frootc_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                       harvest_c_to_litr_cel_c(c,j) = harvest_c_to_litr_cel_c(c,j) + &
+                            hrv_frootc_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                       harvest_c_to_litr_lig_c(c,j) = harvest_c_to_litr_lig_c(c,j) + &
+                            hrv_frootc_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
+
+                       ! wood harvest mortality carbon fluxes
+                       harvest_c_to_cwdc(c,j)  = harvest_c_to_cwdc(c,j)  + &
+                            hrv_livestemc_to_litter(p)  * wtcol(p) * stem_prof(p,j) 
+                       harvest_c_to_cwdc(c,j) = harvest_c_to_cwdc(c,j) + &
+                            hrv_livecrootc_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                       harvest_c_to_cwdc(c,j) = harvest_c_to_cwdc(c,j) + &
+                            hrv_deadcrootc_to_litter(p) * wtcol(p) * croot_prof(p,j) 
+
+                       ! storage harvest mortality carbon fluxes
+                       harvest_c_to_litr_met_c(c,j)     = harvest_c_to_litr_met_c(c,j)     + &
+                            hrv_frootc_storage_to_litter(p)     * wtcol(p) * froot_prof(p,j)
+                       harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                            hrv_livecrootc_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                       harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                            hrv_deadcrootc_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
+
+
+                       ! transfer harvest mortality carbon fluxes
+                       harvest_c_to_litr_met_c(c,j)     = harvest_c_to_litr_met_c(c,j)     + &
+                            hrv_frootc_xfer_to_litter(p)     * wtcol(p) * froot_prof(p,j)
+                       harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                            hrv_livecrootc_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                       harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                            hrv_deadcrootc_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
+
+                       ! fine root litter nitrogen fluxes
+                       harvest_n_to_litr_met_n(c,j) = harvest_n_to_litr_met_n(c,j) + &
+                            hrv_frootn_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                       harvest_n_to_litr_cel_n(c,j) = harvest_n_to_litr_cel_n(c,j) + &
+                            hrv_frootn_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                       harvest_n_to_litr_lig_n(c,j) = harvest_n_to_litr_lig_n(c,j) + &
+                            hrv_frootn_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
+
+                       ! wood harvest mortality nitrogen fluxes
+                       harvest_n_to_cwdn(c,j)  = harvest_n_to_cwdn(c,j)  + &
+                            hrv_livestemn_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                       harvest_n_to_cwdn(c,j) = harvest_n_to_cwdn(c,j) + &
+                            hrv_livecrootn_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                       harvest_n_to_cwdn(c,j) = harvest_n_to_cwdn(c,j) + &
+                            hrv_deadcrootn_to_litter(p) * wtcol(p) * croot_prof(p,j)
+
+                       ! storage harvest mortality nitrogen fluxes
+                       harvest_n_to_litr_met_n(c,j)     = harvest_n_to_litr_met_n(c,j)     + &
+                            hrv_frootn_storage_to_litter(p)     * wtcol(p) * froot_prof(p,j)
+                       harvest_n_to_litr_met_n(c,j) = harvest_n_to_litr_met_n(c,j) + &
+                            hrv_livecrootn_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                       harvest_n_to_litr_met_n(c,j) = harvest_n_to_litr_met_n(c,j) + &
+                            hrv_deadcrootn_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
+
+                       ! transfer harvest mortality nitrogen fluxes
+                       harvest_n_to_litr_met_n(c,j)     = harvest_n_to_litr_met_n(c,j)     + &
+                            hrv_frootn_xfer_to_litter(p)     * wtcol(p) * froot_prof(p,j)
+                       harvest_n_to_litr_met_n(c,j) = harvest_n_to_litr_met_n(c,j) + &
+                            hrv_livecrootn_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                       harvest_n_to_litr_met_n(c,j) = harvest_n_to_litr_met_n(c,j) + &
+                            hrv_deadcrootn_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
+
+
+                       ! fine root litter phosphorus fluxes
+                       harvest_p_to_litr_met_p(c,j) = harvest_p_to_litr_met_p(c,j) + &
+                            hrv_frootp_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                       harvest_p_to_litr_cel_p(c,j) = harvest_p_to_litr_cel_p(c,j) + &
+                            hrv_frootp_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                       harvest_p_to_litr_lig_p(c,j) = harvest_p_to_litr_lig_p(c,j) + &
+                            hrv_frootp_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
+
+                       ! wood harvest mortality phosphorus fluxes
+                       harvest_p_to_cwdp(c,j)  = harvest_p_to_cwdp(c,j)  + &
+                            hrv_livestemp_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                       harvest_p_to_cwdp(c,j) = harvest_p_to_cwdp(c,j) + &
+                            hrv_livecrootp_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                       harvest_p_to_cwdp(c,j) = harvest_p_to_cwdp(c,j) + &
+                            hrv_deadcrootp_to_litter(p) * wtcol(p) * croot_prof(p,j)
+
+                       ! storage harvest mortality phosphorus fluxes
+                       harvest_p_to_litr_met_p(c,j)     = harvest_p_to_litr_met_p(c,j)     + &
+                            hrv_frootp_storage_to_litter(p)     * wtcol(p) * froot_prof(p,j)
+                       harvest_p_to_litr_met_p(c,j) = harvest_p_to_litr_met_p(c,j) + &
+                            hrv_livecrootp_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                       harvest_p_to_litr_met_p(c,j) = harvest_p_to_litr_met_p(c,j) + &
+                            hrv_deadcrootp_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
+
+                       ! transfer harvest mortality phosphorus fluxes
+                       harvest_p_to_litr_met_p(c,j)     = harvest_p_to_litr_met_p(c,j)     + &
+                            hrv_frootp_xfer_to_litter(p)     * wtcol(p) * froot_prof(p,j)
+                       harvest_p_to_litr_met_p(c,j) = harvest_p_to_litr_met_p(c,j) + &
+                            hrv_livecrootp_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                       harvest_p_to_litr_met_p(c,j) = harvest_p_to_litr_met_p(c,j) + &
+                            hrv_deadcrootp_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
+
+                    end if
+                 end if
+
+              end do
+
+           end do
+        end do
+     else
+        do j = 1, nlevdecomp
+           do pi = 1,maxpatch_pft
+              do fc = 1,num_soilc
+                 c = filter_soilc(fc)
+
+                 if (pi <=  col_pp%npfts(c)) then
+                    p = col_pp%pfti(c) + pi - 1
+
+                    if (veg_pp%active(p)) then
+
+                       ! leaf harvest mortality carbon fluxes
+                       harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                            hrv_leafc_to_litter(p) * lf_flab(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+                       harvest_c_to_litr_cel_c(c,j) = harvest_c_to_litr_cel_c(c,j) + &
+                            hrv_leafc_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+                       harvest_c_to_litr_lig_c(c,j) = harvest_c_to_litr_lig_c(c,j) + &
+                            hrv_leafc_to_litter(p) * lf_flig(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+
+                       ! fine root harvest mortality carbon fluxes
+                       harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                            hrv_frootc_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                       harvest_c_to_litr_cel_c(c,j) = harvest_c_to_litr_cel_c(c,j) + &
+                            hrv_frootc_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                       harvest_c_to_litr_lig_c(c,j) = harvest_c_to_litr_lig_c(c,j) + &
+                            hrv_frootc_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
+
+                       ! wood harvest mortality carbon fluxes
+                       harvest_c_to_cwdc(c,j)  = harvest_c_to_cwdc(c,j)  + &
+                            hrv_livestemc_to_litter(p)  * wtcol(p) * stem_prof(p,j) 
+                       harvest_c_to_cwdc(c,j) = harvest_c_to_cwdc(c,j) + &
+                            hrv_livecrootc_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                       harvest_c_to_cwdc(c,j) = harvest_c_to_cwdc(c,j) + &
+                            hrv_deadcrootc_to_litter(p) * wtcol(p) * croot_prof(p,j) 
+
+                       ! storage harvest mortality carbon fluxes
+                       harvest_c_to_litr_met_c(c,j)      = harvest_c_to_litr_met_c(c,j)      + &
+                            hrv_leafc_storage_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+                       harvest_c_to_litr_met_c(c,j)     = harvest_c_to_litr_met_c(c,j)     + &
+                            hrv_frootc_storage_to_litter(p)     * wtcol(p) * froot_prof(p,j)
+                       harvest_c_to_litr_met_c(c,j)  = harvest_c_to_litr_met_c(c,j)  + &
+                            hrv_livestemc_storage_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                       harvest_c_to_litr_met_c(c,j)  = harvest_c_to_litr_met_c(c,j)  + &
+                            hrv_deadstemc_storage_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                       harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                            hrv_livecrootc_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                       harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                            hrv_deadcrootc_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                       harvest_c_to_litr_met_c(c,j)      = harvest_c_to_litr_met_c(c,j)      + &
+                            hrv_gresp_storage_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+                       harvest_c_to_litr_met_c(c,j)      = harvest_c_to_litr_met_c(c,j)      + &
+                            hrv_cpool_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+
+
+                       ! transfer harvest mortality carbon fluxes
+                       harvest_c_to_litr_met_c(c,j)      = harvest_c_to_litr_met_c(c,j)      + &
+                            hrv_leafc_xfer_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+                       harvest_c_to_litr_met_c(c,j)     = harvest_c_to_litr_met_c(c,j)     + &
+                            hrv_frootc_xfer_to_litter(p)     * wtcol(p) * froot_prof(p,j)
+                       harvest_c_to_litr_met_c(c,j)  = harvest_c_to_litr_met_c(c,j)  + &
+                            hrv_livestemc_xfer_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                       harvest_c_to_litr_met_c(c,j)  = harvest_c_to_litr_met_c(c,j)  + &
+                            hrv_deadstemc_xfer_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                       harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                            hrv_livecrootc_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                       harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                            hrv_deadcrootc_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                       harvest_c_to_litr_met_c(c,j)      = harvest_c_to_litr_met_c(c,j)      + &
+                            hrv_gresp_xfer_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+
+                       ! leaf harvest mortality nitrogen fluxes
+                       harvest_n_to_litr_met_n(c,j) = harvest_n_to_litr_met_n(c,j) + &
+                            hrv_leafn_to_litter(p) * lf_flab(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+                       harvest_n_to_litr_cel_n(c,j) = harvest_n_to_litr_cel_n(c,j) + &
+                            hrv_leafn_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+                       harvest_n_to_litr_lig_n(c,j) = harvest_n_to_litr_lig_n(c,j) + &
+                            hrv_leafn_to_litter(p) * lf_flig(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+
+                       ! fine root litter nitrogen fluxes
+                       harvest_n_to_litr_met_n(c,j) = harvest_n_to_litr_met_n(c,j) + &
+                            hrv_frootn_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                       harvest_n_to_litr_cel_n(c,j) = harvest_n_to_litr_cel_n(c,j) + &
+                            hrv_frootn_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                       harvest_n_to_litr_lig_n(c,j) = harvest_n_to_litr_lig_n(c,j) + &
+                            hrv_frootn_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
+
+                       ! wood harvest mortality nitrogen fluxes
+                       harvest_n_to_cwdn(c,j)  = harvest_n_to_cwdn(c,j)  + &
+                            hrv_livestemn_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                       harvest_n_to_cwdn(c,j) = harvest_n_to_cwdn(c,j) + &
+                            hrv_livecrootn_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                       harvest_n_to_cwdn(c,j) = harvest_n_to_cwdn(c,j) + &
+                            hrv_deadcrootn_to_litter(p) * wtcol(p) * croot_prof(p,j)
+
+                       ! retranslocated N pool harvest mortality fluxes
+                       harvest_n_to_litr_met_n(c,j) = harvest_n_to_litr_met_n(c,j) + &
+                            hrv_retransn_to_litter(p) * wtcol(p) * leaf_prof(p,j)
+                       harvest_n_to_litr_met_n(c,j) = harvest_n_to_litr_met_n(c,j) + &
+                            hrv_npool_to_litter(p) * wtcol(p) * leaf_prof(p,j)
+
+                       ! storage harvest mortality nitrogen fluxes
+                       harvest_n_to_litr_met_n(c,j)      = harvest_n_to_litr_met_n(c,j)      + &
+                            hrv_leafn_storage_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+                       harvest_n_to_litr_met_n(c,j)     = harvest_n_to_litr_met_n(c,j)     + &
+                            hrv_frootn_storage_to_litter(p)     * wtcol(p) * froot_prof(p,j)
+                       harvest_n_to_litr_met_n(c,j)  = harvest_n_to_litr_met_n(c,j)  + &
+                            hrv_livestemn_storage_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                       harvest_n_to_litr_met_n(c,j)  = harvest_n_to_litr_met_n(c,j)  + &
+                            hrv_deadstemn_storage_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                       harvest_n_to_litr_met_n(c,j) = harvest_n_to_litr_met_n(c,j) + &
+                            hrv_livecrootn_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                       harvest_n_to_litr_met_n(c,j) = harvest_n_to_litr_met_n(c,j) + &
+                            hrv_deadcrootn_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
+
+                       ! transfer harvest mortality nitrogen fluxes
+                       harvest_n_to_litr_met_n(c,j)      = harvest_n_to_litr_met_n(c,j)      + &
+                            hrv_leafn_xfer_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+                       harvest_n_to_litr_met_n(c,j)     = harvest_n_to_litr_met_n(c,j)     + &
+                            hrv_frootn_xfer_to_litter(p)     * wtcol(p) * froot_prof(p,j)
+                       harvest_n_to_litr_met_n(c,j)  = harvest_n_to_litr_met_n(c,j)  + &
+                            hrv_livestemn_xfer_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                       harvest_n_to_litr_met_n(c,j)  = harvest_n_to_litr_met_n(c,j)  + &
+                            hrv_deadstemn_xfer_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                       harvest_n_to_litr_met_n(c,j) = harvest_n_to_litr_met_n(c,j) + &
+                            hrv_livecrootn_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                       harvest_n_to_litr_met_n(c,j) = harvest_n_to_litr_met_n(c,j) + &
+                            hrv_deadcrootn_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
+
+
+                       ! leaf harvest mortality phosphorus fluxes
+                       harvest_p_to_litr_met_p(c,j) = harvest_p_to_litr_met_p(c,j) + &
+                            hrv_leafp_to_litter(p) * lf_flab(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+                       harvest_p_to_litr_cel_p(c,j) = harvest_p_to_litr_cel_p(c,j) + &
+                            hrv_leafp_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+                       harvest_p_to_litr_lig_p(c,j) = harvest_p_to_litr_lig_p(c,j) + &
+                            hrv_leafp_to_litter(p) * lf_flig(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+
+                       ! fine root litter phosphorus fluxes
+                       harvest_p_to_litr_met_p(c,j) = harvest_p_to_litr_met_p(c,j) + &
+                            hrv_frootp_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                       harvest_p_to_litr_cel_p(c,j) = harvest_p_to_litr_cel_p(c,j) + &
+                            hrv_frootp_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                       harvest_p_to_litr_lig_p(c,j) = harvest_p_to_litr_lig_p(c,j) + &
+                            hrv_frootp_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
+
+                       ! wood harvest mortality phosphorus fluxes
+                       harvest_p_to_cwdp(c,j)  = harvest_p_to_cwdp(c,j)  + &
+                            hrv_livestemp_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                       harvest_p_to_cwdp(c,j) = harvest_p_to_cwdp(c,j) + &
+                            hrv_livecrootp_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                       harvest_p_to_cwdp(c,j) = harvest_p_to_cwdp(c,j) + &
+                            hrv_deadcrootp_to_litter(p) * wtcol(p) * croot_prof(p,j)
+
+                       ! retranslocated phosphorus pool harvest mortality fluxes
+                       harvest_p_to_litr_met_p(c,j) = harvest_p_to_litr_met_p(c,j) + &
+                            hrv_retransp_to_litter(p) * wtcol(p) * leaf_prof(p,j)
+                       harvest_p_to_litr_met_p(c,j) = harvest_p_to_litr_met_p(c,j) + &
+                            hrv_ppool_to_litter(p) * wtcol(p) * leaf_prof(p,j)
+
+                       ! storage harvest mortality phosphorus fluxes
+                       harvest_p_to_litr_met_p(c,j)      = harvest_p_to_litr_met_p(c,j)      + &
+                            hrv_leafp_storage_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+                       harvest_p_to_litr_met_p(c,j)     = harvest_p_to_litr_met_p(c,j)     + &
+                            hrv_frootp_storage_to_litter(p)     * wtcol(p) * froot_prof(p,j)
+                       harvest_p_to_litr_met_p(c,j)  = harvest_p_to_litr_met_p(c,j)  + &
+                            hrv_livestemp_storage_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                       harvest_p_to_litr_met_p(c,j)  = harvest_p_to_litr_met_p(c,j)  + &
+                            hrv_deadstemp_storage_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                       harvest_p_to_litr_met_p(c,j) = harvest_p_to_litr_met_p(c,j) + &
+                            hrv_livecrootp_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                       harvest_p_to_litr_met_p(c,j) = harvest_p_to_litr_met_p(c,j) + &
+                            hrv_deadcrootp_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
+
+                       ! transfer harvest mortality phosphorus fluxes
+                       harvest_p_to_litr_met_p(c,j)      = harvest_p_to_litr_met_p(c,j)      + &
+                            hrv_leafp_xfer_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+                       harvest_p_to_litr_met_p(c,j)     = harvest_p_to_litr_met_p(c,j)     + &
+                            hrv_frootp_xfer_to_litter(p)     * wtcol(p) * froot_prof(p,j)
+                       harvest_p_to_litr_met_p(c,j)  = harvest_p_to_litr_met_p(c,j)  + &
+                            hrv_livestemp_xfer_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                       harvest_p_to_litr_met_p(c,j)  = harvest_p_to_litr_met_p(c,j)  + &
+                            hrv_deadstemp_xfer_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                       harvest_p_to_litr_met_p(c,j) = harvest_p_to_litr_met_p(c,j) + &
+                            hrv_livecrootp_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                       harvest_p_to_litr_met_p(c,j) = harvest_p_to_litr_met_p(c,j) + &
+                            hrv_deadcrootp_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
+
+                    end if
+                 end if
+
+              end do
+
+           end do
+        end do
+     end if
    
      do pi = 1,maxpatch_pft
         do fc = 1,num_soilc

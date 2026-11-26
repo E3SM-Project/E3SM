@@ -10,6 +10,7 @@ module SoilHydrologyMod
   use elm_varctl        , only : iulog, use_vichydro
   use elm_varctl        , only : use_lnd_rof_two_way, lnd_rof_coupling_nstep
   use elm_varctl        , only : use_modified_infil, use_ocn_lnd_one_way
+  use elm_varctl        , only : use_cropman
   use elm_varcon        , only : e_ice, denh2o, denice, rpi
   use EnergyFluxType    , only : energyflux_type
   use SoilHydrologyType , only : soilhydrology_type
@@ -19,7 +20,7 @@ module SoilHydrologyMod
   use TopounitDataType  , only : top_ws
   use LandunitType      , only : lun_pp
   use ColumnType        , only : col_pp
-  use ColumnDataType    , only : col_es, col_ws, col_wf
+  use ColumnDataType    , only : col_es, col_ws, col_wf, col_cs
   use VegetationType    , only : veg_pp
   use VegetationDataType, only : veg_wf
   use abortutils        , only : endrun
@@ -96,6 +97,8 @@ contains
          hksat            =>    soilstate_vars%hksat_col            , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity at saturation (mm H2O /s)
          bsw              =>    soilstate_vars%bsw_col              , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"
 
+         fscov            =>    col_cs%fscov           , & ! Input: [real(r8) (:) ] fraction of soil covered by residue
+
          h2osoi_ice       =>    col_ws%h2osoi_ice      , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
          h2osoi_liq       =>    col_ws%h2osoi_liq      , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)
 
@@ -152,7 +155,11 @@ contains
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
          g = col_pp%gridcell(c)
-         fff(c) = fover(g)
+         if (use_cropman) then
+            fff(c) = fover(g) * (1._r8 + 10._r8*fscov(c))
+         else
+            fff(c) = fover(g)
+         end if
          if (zengdecker_2009_with_var_soil_thick) then
             nlevbed = nlev2bed(c)
             fff(c) = 0.5_r8 * col_pp%zi(c,nlevsoi) / min(col_pp%zi(c,nlevbed), col_pp%zi(c,nlevsoi))
@@ -336,7 +343,6 @@ contains
      real(r8) :: qflx_h2osfc_drain(bounds%begc:bounds%endc) ! bottom drainage from h2osfc
      real(r8) :: qflx_in_h2osfc(bounds%begc:bounds%endc)    ! surface input to h2osfc
      real(r8) :: qflx_in_soil(bounds%begc:bounds%endc)      ! surface input to soil
-     real(r8) :: qflx_infl_excess(bounds%begc:bounds%endc)  ! infiltration excess runoff -> h2osfc
      real(r8) :: frac_infclust                              ! fraction of submerged area that is connected
      real(r8) :: fsno                                       ! copy of frac_sno
      real(r8) :: k_wet                                      ! linear reservoir coefficient for h2osfc
@@ -355,6 +361,8 @@ contains
      real(r8) :: vdep                                       ! temporary, ice wedge polygon volumetric depression depth (m)
      real(r8) :: phi_eff                                    ! temporary, polygonal ground effective subsidence (maxes out at 0.4) (m)
      real(r8) :: swc                                        ! temporary, polygonal surface water content in m
+     real(r8) :: pscov                                      ! infiltration parameter
+     real(r8) :: rscov(3)                                   ! surface cover factor for infiltration
      ! in top VIC layers for runoff calculation
      real(r8) :: rsurf_vic                                  ! temp VIC surface runoff
      real(r8) :: top_moist(bounds%begc:bounds%endc)         ! temporary, soil moisture in top VIC layers
@@ -372,6 +380,8 @@ contains
           cgridcell            =>    col_pp%gridcell             , & ! Input:  [integer  (:)   ]  column's gridcell    
           wtgcell              =>    col_pp%wtgcell              , & ! Input:  [real(r8) (:)   ]  weight (relative to gridcell)
           meangradz            =>    col_pp%meangradz            , & ! Input:  [real(r8) (:)   ]  mean topographic gradient at the column level (unitless)
+
+          fscov                =>    col_cs%fscov                , & ! Input: [real(r8) (:) ] fraction of soil covered by residue 
 
           t_soisno             =>    col_es%t_soisno             , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
 
@@ -399,6 +409,7 @@ contains
           qflx_surf            =>    col_wf%qflx_surf            , & ! Output: [real(r8) (:)   ]  surface runoff (mm H2O /s)
           qflx_h2osfc_surf     =>    col_wf%qflx_h2osfc_surf     , & ! Output: [real(r8) (:)   ]  surface water runoff (mm/s)
           qflx_infl            =>    col_wf%qflx_infl            , & ! Output: [real(r8) (:)   ] infiltration (mm H2O /s)
+          qflx_infl_excess     =>    col_wf%qflx_infl_excess     , & ! Output: [real(r8) (:)   ] infiltration excess (mm H2O /s) 
           qflx_gross_infl_soil =>    col_wf%qflx_gross_infl_soil , & ! Output: [real(r8) (:)] gross infiltration (mm H2O/s)
           qflx_gross_evap_soil =>    col_wf%qflx_gross_evap_soil , & ! Output: [real(r8) (:)] gross evaporation (mm H2O/s)
           qflx_h2orof_drain    =>    col_wf%qflx_h2orof_drain    , & ! Output: [real(r8) (:)] drainange from floodplain inundation volume (mm H2O/s) 
@@ -520,10 +531,18 @@ contains
                 rsurf_vic = min(qflx_in_soil(c), rsurf_vic)
                 qinmax = (1._r8 - fsat(c)) * 10._r8**(-e_ice*top_icefrac)*(qflx_in_soil(c) - rsurf_vic)
              else
+                rscov(:) = 1._r8
+                if (use_cropman) then
+                   pscov = 2._r8 * (1._r8 + 2._r8 * fscov(c))
+                   do j = 1, 3, 1
+                     rscov(j) = 1._r8 - min(0.9_r8, max(0._r8, h2osoi_liq(c,j)/(denh2o*dz(c,j))/watsat(c,j)))
+                     rscov(j) = rscov(j)**(1._r8/pscov-0.5_r8)
+                   end do
+                end if
                 if ( use_modified_infil ) then
-                  qinmax=minval(10._r8**(-e_ice*(icefrac(c,1:3)))*hksat(c,1:3))
+                  qinmax=minval(10._r8**(-e_ice*(icefrac(c,1:3)))*hksat(c,1:3)*rscov)
                 else
-                  qinmax=(1._r8 - fsat(c)) * minval(10._r8**(-e_ice*(icefrac(c,1:3)))*hksat(c,1:3))
+                  qinmax=(1._r8 - fsat(c)) * minval(10._r8**(-e_ice*(icefrac(c,1:3)))*hksat(c,1:3)*rscov)
                 end if
              end if
              
@@ -725,6 +744,7 @@ contains
                 qflx_gross_evap_soil(c) = (1.0_r8 - frac_sno(c)) * qflx_ev_soil(c)
              end if
              qflx_h2osfc_surf(c) = 0._r8
+             qflx_infl_excess(c) = 0._r8
           endif
 
        enddo

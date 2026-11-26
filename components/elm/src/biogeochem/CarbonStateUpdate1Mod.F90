@@ -8,6 +8,8 @@ module CarbonStateUpdate1Mod
   use decompMod               , only : bounds_type
   use elm_varpar              , only : ndecomp_cascade_transitions, nlevdecomp
   use elm_varpar              , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+  use elm_varpar              , only : nlit_pools
+  use elm_varctl              , only : use_cropman
   use elm_varcon              , only : dzsoi_decomp
   use elm_varctl              , only : nu_com, use_c13, use_c14
   use elm_varctl              , only : use_pflotran, pf_cmode, use_fates
@@ -170,7 +172,7 @@ contains
   subroutine CarbonStateUpdate1(bounds, &
        num_soilc, filter_soilc, &
        num_soilp, filter_soilp, &
-       crop_vars, col_cs, veg_cs, col_cf, veg_cf, dt)
+       cnstate_vars, crop_vars, col_cs, veg_cs, col_cf, veg_cf, dt)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic carbon state
@@ -184,6 +186,7 @@ contains
     integer                      , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                      , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                      , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    type(cnstate_type)           , intent(in)    :: cnstate_vars
     type(crop_type)              , intent(inout) :: crop_vars
     type(column_carbon_state)    , intent(inout) :: col_cs
     type(vegetation_carbon_state), intent(inout) :: veg_cs
@@ -195,6 +198,7 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: c,p,j,k,l ! indices
     integer  :: fp,fc     ! lake filter indices
+    integer  :: csi
     !-----------------------------------------------------------------------
 
     associate(                                                                                 &
@@ -225,13 +229,48 @@ contains
                   c = filter_soilc(fc)
                   ! phenology and dynamic land cover fluxes
                   col_cf%decomp_cpools_sourcesink(c,j,i_met_lit) = &
-                       col_cf%phenology_c_to_litr_met_c(c,j) * dt
+                       col_cf%phenology_c_to_litr_met_c(c,j) * dt + &
+                       col_cf%residue_to_litr_met_c(c,j) * dt
                   col_cf%decomp_cpools_sourcesink(c,j,i_cel_lit) = &
-                       col_cf%phenology_c_to_litr_cel_c(c,j) * dt
+                       col_cf%phenology_c_to_litr_cel_c(c,j) * dt + &
+                       col_cf%residue_to_litr_cel_c(c,j) * dt
                   col_cf%decomp_cpools_sourcesink(c,j,i_lig_lit) = &
-                       col_cf%phenology_c_to_litr_lig_c(c,j) * dt
+                       col_cf%phenology_c_to_litr_lig_c(c,j) * dt + &
+                       col_cf%residue_to_litr_lig_c(c,j) * dt
+
+                  if (use_cropman) then
+                  ! update residue pools
+                  col_cs%residue_cpools(c,i_met_lit) = col_cs%residue_cpools(c,i_met_lit) - &
+                        col_cf%residue_to_litr_met_c(c,j) * dzsoi_decomp(j) * dt
+                  col_cs%residue_cpools(c,i_cel_lit) = col_cs%residue_cpools(c,i_cel_lit) - &
+                        col_cf%residue_to_litr_cel_c(c,j) * dzsoi_decomp(j) * dt
+                  col_cs%residue_cpools(c,i_lig_lit) = col_cs%residue_cpools(c,i_lig_lit) - &
+                        col_cf%residue_to_litr_lig_c(c,j) * dzsoi_decomp(j) * dt 
+                  end if
                end do
             end do
+         end if
+
+         if (use_cropman) then
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            ! update residue pools
+            if(.not.use_fates)then
+               col_cs%residue_cpools(c,i_met_lit) = col_cs%residue_cpools(c,i_met_lit) + &
+                     col_cf%phenology_c_to_residue_met_c(c) * dt
+               col_cs%residue_cpools(c,i_cel_lit) = col_cs%residue_cpools(c,i_cel_lit) + &
+                     col_cf%phenology_c_to_residue_cel_c(c) * dt
+               col_cs%residue_cpools(c,i_lig_lit) = col_cs%residue_cpools(c,i_lig_lit) + &
+                     col_cf%phenology_c_to_residue_lig_c(c) * dt
+            end if
+
+            col_cs%residue_cpools(c,i_met_lit) = col_cs%residue_cpools(c,i_met_lit) - &
+                  (col_cf%residue_hr(c,i_met_lit) + col_cf%residue_ctransfer(c,i_met_lit)) * dt
+            col_cs%residue_cpools(c,i_cel_lit) = col_cs%residue_cpools(c,i_cel_lit) - &
+                  (col_cf%residue_hr(c,i_cel_lit) + col_cf%residue_ctransfer(c,i_cel_lit)) * dt
+            col_cs%residue_cpools(c,i_lig_lit) = col_cs%residue_cpools(c,i_lig_lit) - &
+                  (col_cf%residue_hr(c,i_lig_lit) + col_cf%residue_ctransfer(c,i_lig_lit)) * dt
+         end do
          end if
 
          ! litter and SOM HR fluxes
@@ -259,6 +298,25 @@ contains
                end do
             end if
          end do
+         if (use_cropman) then
+         do k = 1, nlit_pools
+            do j = 1, ndecomp_cascade_transitions
+               if (cascade_donor_pool(j) == i_met_lit+k-1) then
+                  csi = j
+                  exit
+               end if
+            end do
+            if ( cascade_receiver_pool(csi) /= 0 ) then  ! skip terminal transitions
+               do fc = 1,num_soilc 
+                  c = filter_soilc(fc)
+
+                  col_cf%decomp_cpools_sourcesink(c,1,cascade_receiver_pool(csi)) = &
+                     col_cf%decomp_cpools_sourcesink(c,1,cascade_receiver_pool(csi)) &
+                     + col_cf%residue_ctransfer(c,k) / dzsoi_decomp(1) * dt
+               end do
+            end if
+         end do
+         end if
 
       endif   
 

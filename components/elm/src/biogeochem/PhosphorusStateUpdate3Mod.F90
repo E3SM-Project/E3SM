@@ -9,8 +9,10 @@ module PhosphorusStateUpdate3Mod
   use shr_kind_mod        , only: r8 => shr_kind_r8
   use decompMod           , only : bounds_type
   use elm_varpar          , only: nlevdecomp,ndecomp_pools,ndecomp_cascade_transitions
+  use elm_varctl          , only : use_cropman
   use elm_varctl          , only : iulog
   use elm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
+  use elm_varpar          , only : nlit_pools 
   use elm_varctl          , only : use_erosion, ero_ccycle, use_fates
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType         , only : cnstate_type
@@ -23,6 +25,7 @@ module PhosphorusStateUpdate3Mod
   use elm_varctl          , only : ECA_Pconst_RGspin
   use VegetationPropertiesType      , only : veg_vp
   use ColumnDataType      , only : col_ps, col_pf
+  use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_ps, veg_pf
   !
   implicit none
@@ -60,6 +63,7 @@ contains
     ! !LOCAL VARIABLES:
     integer :: c,p,j,l,k        ! indices
     integer :: fp,fc      ! lake filter indices
+    integer :: csi
 
    real(r8):: smax_c       ! parameter(gP/m2), maximum amount of sorbed P in equilibrium with solution P
    real(r8):: ks_sorption_c ! parameter(gP/m2), empirical constant for sorbed P in equilibrium with solution P
@@ -72,6 +76,7 @@ contains
     associate(&
          isoilorder     => cnstate_vars%isoilorder ,&
          pdep_prof      => cnstate_vars%pdep_prof_col ,&
+         cascade_donor_pool    => decomp_cascade_con%cascade_donor_pool    ,&
          cascade_receiver_pool => decomp_cascade_con%cascade_receiver_pool ,&
          vmax_minsurf_p_vr => veg_vp%vmax_minsurf_p_vr , &
          km_minsurf_p_vr   => veg_vp%km_minsurf_p_vr     &
@@ -108,6 +113,30 @@ contains
              end do
            endif
         end do
+
+         if (use_cropman) then
+         do k = 1, nlit_pools
+            do j = 1, ndecomp_cascade_transitions
+               if (cascade_donor_pool(j) == i_met_lit+k-1) then
+                  csi = j
+                  exit
+               end if
+            end do
+            if ( cascade_receiver_pool(csi) /= 0 ) then  ! skip terminal transitions
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  flux_mineralization(c,1) = flux_mineralization(c,1) - &
+                     col_pf%residue_sminp_flux(c,k) * dt
+               end do
+            else
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  flux_mineralization(c,1) = flux_mineralization(c,1) + &
+                     col_pf%residue_sminp_flux(c,k) * dt
+               end do
+            end if
+         end do 
+         end if
 
 
         do j = 1, nlevdecomp
@@ -294,6 +323,15 @@ contains
             end do
          end do
       end do
+
+      if (use_cropman) then
+      do l = 1, nlit_pools
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            col_ps%residue_ppools(c,l) = col_ps%residue_ppools(c,l) - col_pf%m_residue_fire_ploss(c,l) * dt
+         end do
+      end do
+      end if
 
 
     ! soil P loss due to soil erosion

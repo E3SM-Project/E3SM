@@ -8,8 +8,10 @@ module NitrogenStateUpdate3Mod
   ! !USES:
   use shr_kind_mod        , only: r8 => shr_kind_r8
   use elm_varpar          , only: nlevdecomp, ndecomp_pools
+  use elm_varctl          , only : use_cropman
   use elm_varctl          , only : iulog
   use elm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
+  use elm_varpar          , only : nlit_pools
   use elm_varctl          , only : use_erosion, ero_ccycle
   use CNDecompCascadeConType , only : decomp_cascade_con
   use ColumnDataType      , only : col_ns, col_nf
@@ -91,6 +93,15 @@ contains
             end do
          end do
       end do
+
+         if (use_cropman) then
+         do l = 1, nlit_pools
+            do fc = 1,num_soilc
+               c = filter_soilc(fc) 
+               col_ns%residue_npools(c,l) = col_ns%residue_npools(c,l) - col_nf%m_residue_fire_nloss(c,l) * dt
+            end do
+         end do
+         end if
 
 
       ! SOM N losses due to erosion
