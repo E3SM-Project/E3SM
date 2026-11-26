@@ -177,6 +177,35 @@ std::string choice_arg (const ast::Expression& e, const std::string& ctx,
   unsupported(ctx + " must be one of " + valid,e);
 }
 
+// An integer literal, possibly negated
+bool is_integer (const ast::Expression& e) {
+  const auto* u = as<ast::UnaryExpression>(e);
+  const auto& n = (u!=nullptr and u->op==TokenTypes::Minus) ? *u->right : e;
+  return as<ast::IntegerLiteral>(n)!=nullptr;
+}
+
+// pow(X,p) and X**p. The exponent is a number ('-0.5') or a fraction of two
+// integers ('1/3'), which FieldPow takes exactly. The fraction is the only
+// division allowed: 'X**(1/3)' works, while X**1/3 is (X**1)/3, as usual.
+void translate_pow (const ast::Expression& base, const ast::Expression& exponent,
+                    const ast::Expression& self, std::string& diag_name,
+                    ekat::ParameterList& params)
+{
+  std::string expo;
+  const auto* frac = as<ast::BinaryExpression>(exponent);
+  if (is_number(exponent)) {
+    expo = operand_name(exponent);
+  } else if (frac!=nullptr and frac->op==TokenTypes::Slash and
+             is_integer(*frac->left) and is_integer(*frac->right)) {
+    expo = operand_name(*frac->left) + "/" + operand_name(*frac->right);
+  } else {
+    unsupported("the exponent of a power must be a number, or a fraction of two integers",self);
+  }
+  diag_name = "FieldPow";
+  params.set<std::string>("field_name",operand_name(base));
+  params.set<std::string>("exponent",expo);
+}
+
 // ---------------------------------------------------------------------------
 // Translation: one AST node -> one diagnostic
 // ---------------------------------------------------------------------------
@@ -242,6 +271,11 @@ void translate_binary (const ast::BinaryExpression& e, const ast::Expression& se
   // written where it belongs, inside where(..), is consumed by translate_method
   // and never reaches this function -- which is why the error below can safely
   // say the comparison is in the wrong place.
+  if (e.op==TokenTypes::Exp) {
+    translate_pow(*e.left,*e.right,self,diag_name,params);
+    return;
+  }
+
   const auto op = binary_op_to_diag_op(e.op);
   if (op=="") {
     if (comparison_to_cmp(e.op)!="") {
@@ -393,6 +427,13 @@ const dexpr::FunctionRegistry& eamxx_registry ()
            .example = "abs(omega)",
            .form = CallForm::Function});
 
+    r.add({.name = "pow",
+           .desc = "field to a constant power, a number or a fraction n/d; same as X**p",
+           .min_positional = 2, .max_positional = 2,
+           .keywords = {{"invalid",false},{"units",false}},
+           .example = "pow(p_mid/P0,1/3)",
+           .form = CallForm::Function});
+
     // Each example must parse, match the spec that declared it, and call it.
     // A wrong arity or keyword fails here, not when a user first writes it.
     dexpr::validate_registry(r);
@@ -405,10 +446,15 @@ const dexpr::FunctionRegistry& eamxx_registry ()
 void translate_function (const Call& call, const ast::Expression& self,
                          std::string& diag_name, ekat::ParameterList& params)
 {
-  if (call.name=="log" or call.name=="exp" or call.name=="sqrt" or call.name=="abs") {
-    diag_name = "UnaryMath";
-    params.set<std::string>("op",call.name);
-    params.set<std::string>("field_name",operand_name(*call.positional[0]));
+  if (call.name=="log" or call.name=="exp" or call.name=="sqrt" or
+      call.name=="abs" or call.name=="pow") {
+    if (call.name=="pow") {
+      translate_pow(*call.positional[0],*call.positional[1],self,diag_name,params);
+    } else {
+      diag_name = "UnaryMath";
+      params.set<std::string>("op",call.name);
+      params.set<std::string>("field_name",operand_name(*call.positional[0]));
+    }
     if (const auto* invalid = keyword(call,"invalid")) {
       params.set<std::string>("invalid",choice_arg(*invalid,"'invalid'",{"nan","mask"}));
     }

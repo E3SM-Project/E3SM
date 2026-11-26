@@ -464,7 +464,6 @@ TEST_CASE("create_diag")
     // Free-standing spelling of a method
     REQUIRE_THROWS (create_diagnostic("mean(T_mid,'lev')",grid));
     // Operators with no diagnostic behind them
-    REQUIRE_THROWS (create_diagnostic("T_mid**2",grid));
     REQUIRE_THROWS (create_diagnostic("!T_mid",grid));
     // Attribute access with no call
     REQUIRE_THROWS (create_diagnostic("T_mid.prev",grid));
@@ -510,11 +509,55 @@ TEST_CASE("create_diag")
     REQUIRE_THROWS (create_diagnostic("sqrt(qv,units='ignore')",grid));
     REQUIRE_THROWS (create_diagnostic("abs(qv,invalid='mask')",grid));
 
+    // pow(X,p) and X**p are the same diag class. The exponent is a number, or a
+    // fraction of two integers, and goes down as written (a negative one as a number)
+    auto p1 = create_diagnostic("pow(T_mid,2)",grid);
+    REQUIRE (std::dynamic_pointer_cast<FieldPow>(p1)!=nullptr);
+    REQUIRE (get(p1,"field_name")=="T_mid");
+    REQUIRE (get(p1,"exponent")=="2");
+    auto p2 = create_diagnostic("T_mid**2",grid);
+    REQUIRE (std::dynamic_pointer_cast<FieldPow>(p2)!=nullptr);
+    REQUIRE (get(p2,"field_name")=="T_mid");
+    REQUIRE (get(p2,"exponent")=="2");
+    REQUIRE (get(create_diagnostic("pow(qv,-0.5,invalid='mask')",grid),"invalid")=="mask");
+    REQUIRE (get(create_diagnostic("pow(qv,-0.5,invalid='mask')",grid),"exponent")=="-0.5");
+    REQUIRE (get(create_diagnostic("qv**(-1)",grid),"exponent")=="-1");
+    REQUIRE (get(create_diagnostic("qv**-1",grid),"exponent")=="-1");
+    REQUIRE (get(create_diagnostic("qv**(1/3)",grid),"exponent")=="1/3");
+    REQUIRE (get(create_diagnostic("pow(qv,-2/3)",grid),"exponent")=="-2/3");
+    REQUIRE (get(create_diagnostic("pow(qv,1e-1)",grid),"exponent")=="0.1");
+    // Only the form 'n/d' is a fraction. X**1/3 is (X**1)/3
+    auto p3 = create_diagnostic("qv**1/3",grid);
+    REQUIRE (std::dynamic_pointer_cast<BinaryOp>(p3)!=nullptr);
+    REQUIRE (get(p3,"arg1")=="(qv**1)");
+    // '**' binds tighter than '*' and than a prefix minus
+    auto p4 = create_diagnostic("2*qv**2",grid);
+    REQUIRE (std::dynamic_pointer_cast<BinaryOp>(p4)!=nullptr);
+    REQUIRE (get(p4,"arg2")=="(qv**2)");
+    auto p5 = create_diagnostic("-qv**2",grid);
+    REQUIRE (get(p5,"arg2")=="(qv**2)");
+    // The exponent must be a number or an integer fraction
+    REQUIRE_THROWS (create_diagnostic("pow(qv,T_mid)",grid));
+    REQUIRE_THROWS (create_diagnostic("qv**T_mid",grid));
+    REQUIRE_THROWS (create_diagnostic("qv**2**3",grid));    // qv**(2**3)
+    REQUIRE_THROWS (create_diagnostic("pow(qv,'2')",grid));
+    REQUIRE_THROWS (create_diagnostic("pow(qv,1.5/2)",grid));
+    REQUIRE_THROWS (create_diagnostic("pow(qv,(1+1)/3)",grid));
+    // 0 is not a valid exponent (0^0), which the diag says when it is built
+    REQUIRE_THROWS (create_diagnostic("qv**0",grid));
+    // The same keywords as the others, with the same checks
+    REQUIRE_THROWS (create_diagnostic("pow(qv,2,invalid='zero')",grid));
+    REQUIRE_THROWS (create_diagnostic("pow(qv,2,units='K')",grid));
+    REQUIRE (get(create_diagnostic("pow(qv,2,units='ignore')",grid),"units")=="ignore");
+
     // Operands go down by name, and come back around
     auto c1 = create_diagnostic("log(qv+qc)",grid);
     REQUIRE (get(c1,"field_name")=="(qv+qc)");
     auto c2 = create_diagnostic("sqrt(p_mid/P0)",grid);
     REQUIRE (get(c2,"field_name")=="(p_mid/P0)");
+    auto c2b = create_diagnostic("pow(p_mid/P0,0.25)",grid);
+    REQUIRE (std::dynamic_pointer_cast<FieldPow>(c2b)!=nullptr);
+    REQUIRE (get(c2b,"field_name")=="(p_mid/P0)");
     // ...and compose with methods, either way around
     auto c3 = create_diagnostic("log(qv).mean('lev')",grid);
     REQUIRE (std::dynamic_pointer_cast<VertContract>(c3)!=nullptr);
@@ -532,9 +575,7 @@ TEST_CASE("create_diag")
     REQUIRE_THROWS (create_diagnostic("log()",grid));
     REQUIRE_THROWS (create_diagnostic("log(qv,qc)",grid));
     REQUIRE_THROWS (create_diagnostic("sqrt(qv,qc)",grid));
-    // pow is not available (yet), as a function or as an operator
-    REQUIRE_THROWS (create_diagnostic("pow(qv,2)",grid));
-    REQUIRE_THROWS (create_diagnostic("qv**2",grid));
+    REQUIRE_THROWS (create_diagnostic("pow(qv)",grid));
     // A callee that is not a name
     REQUIRE_THROWS (create_diagnostic("(qv+qc)(2)",grid));
   }

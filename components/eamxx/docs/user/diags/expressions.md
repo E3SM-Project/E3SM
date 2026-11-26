@@ -36,6 +36,7 @@ diagnostics use but that are not written), need no name of their own.
 | -------- | ------- |
 | `a + b`, `a - b`, `a * b`, `a / b` | element-wise arithmetic |
 | `-a` | negation, shorthand for `(-1)*a` |
+| `a ** p` | `a` to the power `p`, a number or a fraction of integers (`1/3`); same as `pow(a, p)` |
 | `>`, `>=`, `<`, `<=`, `==`, `!=` | comparison, **only** inside `where(..)` |
 | `( )` | grouping |
 
@@ -67,8 +68,8 @@ so does `T_mid*kappa` with `kappa := Rair/Cpair` in `aliases:`. Literals alone s
 literals, so `T_mid+(2+3)` is in K. Other rank-0 fields, like `ps.mean('col')`, are
 not scalars: use `ps - ps.mean('col').broadcast_like(ps)`.
 
-Precedence is the usual one, so `qc+qv*p_mid` is `qc+(qv*p_mid)`. When in
-doubt, parenthesize. (That example only illustrates grouping: `qc+(qv*p_mid)`
+Precedence is the usual one, so `qc+qv*p_mid` is `qc+(qv*p_mid)`, `2*qv**2` is
+`2*(qv**2)`, and `-qv**2` is `-(qv**2)`. When in doubt, parenthesize. (That example only illustrates grouping: `qc+(qv*p_mid)`
 adds a mixing ratio to a pressure, and is rejected at run time for incompatible
 units, while `(qc+qv)*p_mid` is fine.)
 
@@ -254,32 +255,49 @@ Notes:
 | `exp(X)` | exponential | none |
 | `sqrt(X)` | square root | `sqrt(u)` |
 | `abs(X)` | absolute value | `u` |
+| `pow(X, p)`, `X**p` | `X` to the power `p` | `u^p` |
 
 ```yaml
 field_names:
   - log_qv   := log(qv, invalid='mask')
   - log_T    := log(T_mid, units='ignore')
+  - exner    := pow(p_mid/P0, 0.2857)
+  - cbrt_qv  := qv**(1/3)
+  - qt_sq    := (qc+qv)**2
 ```
 
 Two keywords control what happens where the math does not:
 
-- **`invalid='nan'` or `'mask'`** (`log`, `sqrt`): what an entry outside the
-  function's domain becomes. That is `X<=0` for `log`, and `X<0` for `sqrt`.
+- **`invalid='nan'` or `'mask'`** (`log`, `sqrt`, `pow`): what an entry outside
+  the function's domain becomes. That is `X<=0` for `log`, `X<0` for `sqrt`, and
+  for `pow`, `X<0` unless `p` is an integer, and `X==0` unless `p>0`.
   - `'nan'`, the default, computes it anyway, giving NaN (or `-inf` for
     `log(0)`). Use it when you do not expect any: with floating point exceptions
     enabled, the run stops right there, which is the point.
   - `'mask'` leaves it out: the entry is missing (the fill value) in the output,
     as `where(..)` would make it.
-- **`units='check'` or `'ignore'`** (`log`, `exp`): with `'check'`, the default,
-  `X` must be dimensionless and unscaled (`kg/kg` is fine, `g/kg` and `K` are not). `'ignore'` skips
-  the check, and the output is unitless: `log(T_mid, units='ignore')` is the
-  log of the number in kelvin.
+- **`units='check'` or `'ignore'`** (`log`, `exp`, `pow`): with `'check'`, the
+  default, `log` and `exp` take a dimensionless, unscaled `X` only (`kg/kg` is
+  fine, `g/kg` and `K` are not), and the units of `pow(X, p)` are `u^p`, which
+  needs `p` to be a fraction (see below), unless `X` is dimensionless. `'ignore'`
+  skips the check, and the output is unitless: `log(T_mid, units='ignore')` is
+  the log of the number in kelvin.
 
 Notes:
 
+- The exponent of `pow` is a number (`2`, `-0.5`, `1e-3`) or a fraction of two
+  integers (`1/3`, `-2/3`), not a field or another expression. A fraction is
+  taken exactly. A decimal is matched to a fraction `n/d` with `d` up to 12, to
+  work out the units: `0.5` and `-1.5` are, but `0.2857` and `0.3333333` are
+  not, and then need `units='ignore'` or a dimensionless `X`. Write `1/3` to
+  get units, as in `pm**(1/3)`.
+- **`X**1/3` is `(X**1)/3`**, as `**` binds tighter than `/`. For a cube root,
+  write `X**(1/3)`.
+- The exponent cannot be 0, since `0^0` is not defined.
+- `X**2`, `X**3` and `X**-1` are computed with multiplications and a division,
+  not as general powers. `pow(X, 2)` and `X**2` are the same diagnostic, but two
+  expressions: requesting both computes it twice.
 - Entries that are already missing in `X` stay missing, and are not computed.
-- There is no `pow` (or `**`) yet. A square is `X*X`, and `sqrt(X)` is the
-  square root.
 
 Named quantities are not operations, and stay plain names in an expression:
 `LiqWaterPath`, `RelativeHumidity`, `z_mid`, `dz`, `precip_liq_surf_mass_flux`,
@@ -315,8 +333,8 @@ at the offending part. Unknown function names come back with the list of
 available ones.
 
 ```text
-Error! Unsupported expression: no diagnostic implements the operator '**'.
- - subexpression: (T_mid**2)
+Error! Unsupported expression: no diagnostic implements the unary operator '!'.
+ - subexpression: (!T_mid)
 ```
 
 ## Worked example
