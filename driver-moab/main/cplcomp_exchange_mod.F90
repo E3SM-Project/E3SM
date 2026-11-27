@@ -358,6 +358,44 @@ subroutine  copy_aream_from_area(mbappid)
       deallocate(gids,coords)
   end subroutine cplcomp_moab_create_scm_point_cloud
 
+  subroutine cplcomp_moab_check_receivers(src_appid, mpicom_join, mpicom_new, compname)
+      ! Warn when the coupler has more ranks than a migrated mesh has cells. iMOAB_SendMesh
+      ! partitions the cells over all coupler ranks, so some coupler ranks then receive no
+      ! cells. MOAB versions whose iMOAB_ReceiveMesh decides locally that such an empty
+      ! rank holds a point cloud skip the collective resolve_shared_ents there and fail.
+      ! Collective over mpicom_join; call it before the mesh is sent.
+      use iMOAB, only: iMOAB_GetGlobalInfo
+      integer, intent(in) :: src_appid    ! component app id (negative off the component pes)
+      integer, intent(in) :: mpicom_join  ! joint component-coupler communicator
+      integer, intent(in) :: mpicom_new   ! coupler communicator (MPI_COMM_NULL off the coupler pes)
+      character(len=*), intent(in) :: compname
+      integer :: ierr, ngv, nge, npes_cpl
+      integer :: lvals(2), gvals(2)
+
+      lvals = 0
+      if (src_appid >= 0) then
+         ierr = iMOAB_GetGlobalInfo(src_appid, ngv, nge)
+         if (ierr == 0) lvals(1) = nge
+      endif
+      if (mpicom_new /= MPI_COMM_NULL) then
+         call MPI_Comm_size(mpicom_new, npes_cpl, ierr)
+         lvals(2) = npes_cpl
+      endif
+      call shr_mpi_max(lvals, gvals, mpicom_join, 'cplcomp_moab_check_receivers', all=.true.)
+      ! gvals(1): global cells of the mesh (0 for a point cloud); gvals(2): coupler pes
+      if (gvals(1) > 0 .and. gvals(2) > gvals(1)) then
+         if (seq_comm_iamroot(CPLID)) then
+            write(logunit,'(A,I0,A,I0,A)') ' WARNING: the coupler has ', gvals(2), &
+                 ' pes but the '//trim(compname)//' mesh has only ', gvals(1), &
+                 ' cells, so some coupler pes receive no cells in iMOAB_ReceiveMesh.'
+            write(logunit,'(A,I0,A)') ' WARNING: MOAB without the collective point-cloud'// &
+                 ' check in iMOAB_ReceiveMesh fails here; set NTASKS_CPL <= ', gvals(1), &
+                 ' or use a MOAB that has it.'
+            call shr_sys_flush(logunit)
+         endif
+      endif
+  end subroutine cplcomp_moab_check_receivers
+
   subroutine cplcomp_moab_init_atm(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
 
       use iMOAB, only: iMOAB_WriteMesh, iMOAB_GetMeshInfo
@@ -399,6 +437,13 @@ subroutine  copy_aream_from_area(mbappid)
       call seq_infodata_GetData(infodata, atm_mesh=atm_mesh, single_column=single_column, &
            scm_multcols=scm_multcols, scm_nx=scm_nx, scm_ny=scm_ny, scmlat=scmlat, scmlon=scmlon)
       mb_scm_atm = single_column .or. scm_multcols
+      if (trim(atm_mesh) == 'none' .and. .not. mb_scm_atm) then
+         if (atm_pg_active) then
+            call cplcomp_moab_check_receivers(mhpgid, mpicom_join, mpicom_new, 'atm')
+         else
+            call cplcomp_moab_check_receivers(mphaid, mpicom_join, mpicom_new, 'atm')
+         endif
+      endif
 
 !!!!!!!! ON ATM COMPONENT
       if (mphaid >= 0) then  ! component atm procs
@@ -555,6 +600,8 @@ if (single_column .and. .not. scm_multcols) then
       call seq_infodata_GetData(infodata, ocn_domain=ocn_domain, &
            single_column=single_column, scm_multcols=scm_multcols)
       migrate_ocn_component_mesh = trim(ocn_domain) == 'none'
+      if (migrate_ocn_component_mesh) &
+         call cplcomp_moab_check_receivers(mpoid, mpicom_join, mpicom_new, 'ocn')
       use_atm_coupler_mesh = trim(ocn_domain) /= 'none' .and. (single_column .or. scm_multcols)
       mb_scm_ocn = use_atm_coupler_mesh
 
@@ -739,6 +786,7 @@ if (single_column .and. .not. scm_multcols) then
       endif
 
       if (mb_scm_land .or. dead_comps) then
+         call cplcomp_moab_check_receivers(mlnid, mpicom_join, mpicom_new, 'lnd')
           !  change : send the point cloud land mesh (1 point usually)
           !     when mb_scm_land
          if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (land)
@@ -869,6 +917,8 @@ if (single_column .and. .not. scm_multcols) then
       call seq_infodata_GetData(infodata, ice_domain=ice_domain, &
            single_column=single_column, scm_multcols=scm_multcols)
       migrate_ice_component_mesh = trim(ice_domain) == 'none'
+      if (migrate_ice_component_mesh) &
+         call cplcomp_moab_check_receivers(MPSIID, mpicom_join, mpicom_new, 'ice')
       use_atm_coupler_mesh = trim(ice_domain) /= 'none' .and. (single_column .or. scm_multcols)
       mb_scm_ice = use_atm_coupler_mesh
       if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component p
