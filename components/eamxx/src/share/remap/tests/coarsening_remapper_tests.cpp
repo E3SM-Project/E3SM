@@ -455,4 +455,90 @@ TEST_CASE("coarsening_remap")
   scorpio::finalize_subsystem();
 }
 
+
+TEST_CASE("coarsening_remap_bcast_mask")
+{
+  using namespace ShortFieldTagsNames;
+
+  // A field masked by a broadcast of a (ncol) mask must be remapped exactly like
+  // a field with the same data and a mask that is a full copy of it.
+  // We check all the ranks (2-4) of the kernels, both packed and unpacked layouts
+  ekat::Comm comm(MPI_COMM_WORLD);
+  scorpio::init_subsystem(comm);
+  int seed = get_random_test_seed(&comm);
+
+  std::string filename = "cr_tests_map_bcast_mask." + std::to_string(comm.size()) + ".nc";
+  const int nldofs_tgt = 3;
+  create_remap_file(filename, nldofs_tgt*comm.size());
+
+  auto src_grid = build_src_grid(comm, nldofs_tgt*comm.size()+1, seed);
+  auto remap = std::make_shared<HorizontalRemapper>(src_grid,filename,true);
+  auto tgt_grid = remap->get_tgt_grid();
+
+  // Base (ncol) mask: some columns are masked
+  const int ncols = src_grid->get_num_local_dofs();
+  FieldIdentifier m2d_id ("m2d",src_grid->get_2d_scalar_layout(),ekat::units::none,src_grid->name(),DataType::IntType);
+  Field m2d (m2d_id,true);
+  auto m2d_h = m2d.get_view<int*,Host>();
+  for (int i=0; i<ncols; ++i) {
+    m2d_h(i) = (i%3)!=1;
+  }
+  m2d.sync_to_dev();
+
+  // Rank 2 (packed), rank 3 (unpacked and packed), and rank 4 (packed)
+  const std::vector<std::pair<std::string,LayoutType>> layouts = {
+    {"s3d",LayoutType::Scalar3D},
+    {"t2d",LayoutType::Tensor2D},
+    {"v3d",LayoutType::Vector3D},
+    {"t3d",LayoutType::Tensor3D}
+  };
+
+  std::vector<Field> src_full, src_bcast, tgt_full, tgt_bcast;
+  int ifield = 0;
+  for (const auto& [name,lt] : layouts) {
+    // Same data in the full and broadcast fields (same seed)
+    auto sf = create_field(name+"_full", lt,*src_grid,LEV,seed+ifield);
+    auto sb = create_field(name+"_bcast",lt,*src_grid,LEV,seed+ifield);
+    ++ifield;
+    auto tf = create_field(name+"_full", lt,*tgt_grid,LEV);
+    auto tb = create_field(name+"_bcast",lt,*tgt_grid,LEV);
+
+    // The same (ncol) mask is the original mask of all the broadcast masks
+    const auto& layout = sb.get_header().get_identifier().get_layout();
+    sf.create_valid_mask(name+"_full_mask");
+    sf.get_valid_mask().deep_copy(m2d.broadcast_to(layout));
+    sb.set_valid_mask(m2d.broadcast_to(layout));
+
+    remap->register_field(sf,tf);
+    remap->register_field(sb,tb);
+    src_full.push_back(sf);
+    src_bcast.push_back(sb);
+    tgt_full.push_back(tf);
+    tgt_bcast.push_back(tb);
+  }
+  remap->registration_ends();
+  remap->remap_fwd();
+
+  for (size_t i=0; i<layouts.size(); ++i) {
+    const auto& name = layouts[i].first;
+    const auto& tf = tgt_full[i];
+    const auto& tb = tgt_bcast[i];
+    root_print ("   -> Checking " + name + "\n",comm);
+
+    REQUIRE (tf.has_valid_mask());
+    REQUIRE (tb.has_valid_mask());
+    REQUIRE (tb.get_valid_mask().get_header().is_broadcast());
+
+    // Same validity (a broadcast mask can only be copied, so expand it first)
+    auto mb = tf.get_valid_mask().clone(name+"_mask_bcast");
+    mb.deep_copy(tb.get_valid_mask());
+    REQUIRE (views_are_equal(tf.get_valid_mask(),mb));
+
+    // Same data (an unmasked copy of the broadcast one; invalid entries are skipped using the full mask)
+    REQUIRE (views_are_equal(tf,tb.clone(CloneFlags::CopyData)));
+  }
+
+  scorpio::finalize_subsystem();
+}
+
 } // namespace scream

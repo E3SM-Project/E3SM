@@ -183,6 +183,14 @@ Masks with the same name must hold the same values, since the stream updates
 the count once, and the horizontal remapper remaps such masks once; sharing
 the mask, as above, is the way to ensure it.
 
+If an output needs the same mask as another one with more dimensions, set the
+mask of the larger one as a broadcast of the smaller one,
+`mask.broadcast_to(layout)`. The stream and the horizontal remapper then use
+the original mask: one count, with the layout of the original mask, is shared
+by all the outputs that broadcast it (and the remapper only supports an
+original mask that is `(ncol)`). `FieldAtPressureLevel` and `FieldAtHeight` do
+this for the outputs with extra dimensions.
+
 ## Testing
 
 - `src/share/diagnostics/tests/multi_output_test.cpp` shows how to test a

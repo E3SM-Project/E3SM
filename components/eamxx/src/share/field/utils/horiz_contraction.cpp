@@ -25,11 +25,11 @@ void horiz_contraction(const Field &f_out, const Field &f_in, const Field &weigh
 
   switch(l_in.rank()) {
     case 1: {
-      using mask_t = Field::view_dev_t<const int*>;
+      using mask_t = Field::strided_view_dev_t<const int*>;
 
       auto v_in  = f_in.get_view<const ST *>();
       auto v_out = f_out.get_view<ST>();
-      auto mask  = is_masked ? f_in.get_valid_mask().get_view<const int*>() : mask_t{};
+      auto mask  = is_masked ? f_in.get_valid_mask().get_strided_view<const int*>() : mask_t{};
 
       ST n = 0;
       auto policy = Kokkos::RangePolicy<Field::device_t::execution_space>(0,ncols);
@@ -42,13 +42,13 @@ void horiz_contraction(const Field &f_out, const Field &f_in, const Field &weigh
       Kokkos::deep_copy(v_out, n);
     } break;
     case 2: {
-      using mask_t = Field::view_dev_t<const int**>;
+      using mask_t = Field::strided_view_dev_t<const int**>;
 
       auto v_in   = f_in.get_view<const ST **>();
       auto v_out  = f_out.get_view<ST *>();
       auto d1     = l_in.dim(1);
 
-      auto mask  = is_masked ? f_in.get_valid_mask().get_view<const int**>() : mask_t{};
+      auto mask  = is_masked ? f_in.get_valid_mask().get_strided_view<const int**>() : mask_t{};
       auto policy = TPF::get_default_team_policy(d1, ncols);
       auto outer =  KOKKOS_LAMBDA(const TeamMember &tm) {
         const int j = tm.league_rank();
@@ -66,14 +66,14 @@ void horiz_contraction(const Field &f_out, const Field &f_in, const Field &weigh
       Kokkos::parallel_for(f_out.name(), policy, outer);
     } break;
     case 3: {
-      using mask_t = Field::view_dev_t<const int***>;
+      using mask_t = Field::strided_view_dev_t<const int***>;
 
       auto v_in   = f_in.get_view<const ST ***>();
       auto v_out  = f_out.get_view<ST **>();
       auto d1     = l_in.dim(1);
       auto d2     = l_in.dim(2);
 
-      auto mask  = is_masked ? f_in.get_valid_mask().get_view<const int***>() : mask_t{};
+      auto mask  = is_masked ? f_in.get_valid_mask().get_strided_view<const int***>() : mask_t{};
       auto policy = TPF::get_default_team_policy(d1*d2, ncols);
       auto outer =  KOKKOS_LAMBDA(const TeamMember &tm) {
         const int idx = tm.league_rank();
