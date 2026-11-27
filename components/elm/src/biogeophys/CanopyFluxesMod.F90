@@ -289,6 +289,13 @@ contains
     real(r8) :: delt_soil
     real(r8) :: delt_h2osfc
     real(r8) :: lw_grnd
+    real(r8) :: lsai_exp(bounds%begp:bounds%endp)    ! exp(-LSAI), iteration invariant
+    real(r8) :: rdl_num(bounds%begp:bounds%endp)     ! numerator of rdl, iteration invariant
+    real(r8) :: lw_grnd_p(bounds%begp:bounds%endp)   ! lw_grnd, iteration invariant
+    real(r8) :: obu_fv(bounds%begp:bounds%endp)      ! obu at each patch's last FrictionVelocity call
+    real(r8) :: um_fv(bounds%begp:bounds%endp)       ! um at each patch's last FrictionVelocity call
+    real(r8) :: ur_fv(bounds%begp:bounds%endp)       ! ur at each patch's last FrictionVelocity call
+    real(r8) :: ugust_fv(bounds%begp:bounds%endp)    ! ugust_total at each patch's last FrictionVelocity call
     real(r8) :: delq_snow
     real(r8) :: delq_soil
     real(r8) :: delq_h2osfc
@@ -316,6 +323,13 @@ contains
     real(r8) :: prev_tau(bounds%begp:bounds%endp) ! Previous iteration tau
     real(r8) :: prev_tau_diff(bounds%begp:bounds%endp) ! Previous difference in iteration tau
     real(r8) :: slope_rad, deg2rad
+#ifndef _OPENACC
+    real(r8), allocatable :: ps_tfac(:,:)         ! temperature factors shared by the sun and sha Photosynthesis calls
+    integer , allocatable :: ps_tfac_flag(:)      ! which ps_tfac factors are set, per filter position
+#else
+    real(r8) :: ps_tfac(bounds%endp-bounds%begp+1,11)
+    integer  :: ps_tfac_flag(bounds%endp-bounds%begp+1)
+#endif
 
     ! Indices for raw and rah
     integer, parameter :: above_canopy = 1         ! Above canopy
@@ -776,23 +790,57 @@ contains
          
       end do
 
+      ! Terms of the stability iteration whose inputs do not change during it.
+      ! They are computed with the same scalar expressions as before, so they
+      ! keep the same values.
+      !DIR$ NOVECTOR
+      do f = 1, fn
+         p = filterp(f)
+         c = veg_pp%column(p)
+
+         lsai_exp(p) = exp(-(elai(p)+esai(p)))
+
+         !Litter layer resistance. Added by K.Sakaguchi
+         snow_depth_c = z_dl ! critical depth for 100% litter burial by snow (=litter thickness)
+         fsno_dl = snow_depth(c)/snow_depth_c    ! effective snow cover for (dry)plant litter
+         elai_dl = lai_dl*(1._r8 - min(fsno_dl,1._r8)) ! exposed (dry)litter area index
+         rdl_num(p) = 1._r8 - exp(-elai_dl)
+
+         ! fractionate ground emitted longwave
+         lw_grnd_p(p) = (frac_sno(c)*t_soisno(c,snl(c)+1)**4 &
+              +(1._r8-frac_sno(c)-frac_h2osfc(c))*t_soisno(c,1)**4 &
+              +frac_h2osfc(c)*t_h2osfc(c)**4)
+      end do
+
       ! Set counter for leaf temperature iteration (itlef)
 
       itlef = 1
       fnorig = fn
       fporig(1:fn) = filterp(1:fn)
+#ifndef _OPENACC
+      allocate(ps_tfac(max(fn,1),11), ps_tfac_flag(max(fn,1)))
+#endif
 
       ! Begin stability iteration
       call t_startf('can_iter')
       ITERATION : do while (itlef <= itmax .and. fn > 0)
 
          ! Determine friction velocity, and potential temperature and humidity
-         ! profiles of the surface boundary layer
+         ! profiles of the surface boundary layer. Only ustar, temp1, temp2 and fm
+         ! are needed in the iteration; the other outputs are computed once after
+         ! it from the inputs of each patch's last call, which are kept here.
+         do f = 1, fn
+            p = filterp(f)
+            obu_fv(p)   = obu(p)
+            um_fv(p)    = um(p)
+            ur_fv(p)    = ur(p)
+            ugust_fv(p) = ugust_total(p)
+         end do
          call FrictionVelocity (begp, endp, fn, filterp, &
               displa(begp:endp), z0mv(begp:endp), z0hv(begp:endp), z0qv(begp:endp), &
               obu(begp:endp), itlef, ur(begp:endp), um(begp:endp), ugust_total(begp:endp), ustar(begp:endp), &
               temp1(begp:endp), temp2(begp:endp), temp12m(begp:endp), temp22m(begp:endp), fm(begp:endp), &
-              frictionvel_vars)
+              frictionvel_vars, part=1)
 
          do f = 1, fn
             p = filterp(f)
@@ -839,7 +887,7 @@ contains
             ! Parameterization for variation of csoilc with canopy density from
             ! X. Zeng, University of Arizona
 
-            w = exp(-(elai(p)+esai(p)))
+            w = lsai_exp(p)
 
             ! changed by K.Sakaguchi from here
             ! transfer coefficient over bare soil is changed to a local variable
@@ -926,7 +974,7 @@ contains
                call Photosynthesis (bounds, fn, filterp, &
                         svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
                         dayl_factor(begp:endp), atm2lnd_vars,  surfalb_vars, solarabs_vars, &
-                        canopystate_vars, photosyns_vars, 'sun')
+                        canopystate_vars, photosyns_vars, 'sun', ps_tfac, ps_tfac_flag, .false.)
             end if
 
             if ( use_c13 ) then
@@ -948,7 +996,7 @@ contains
               call Photosynthesis (bounds, fn, filterp, &
                    svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
                    dayl_factor(begp:endp), atm2lnd_vars,surfalb_vars, solarabs_vars, &
-                   canopystate_vars, photosyns_vars, 'sha')
+                   canopystate_vars, photosyns_vars, 'sha', ps_tfac, ps_tfac_flag, .true.)
             end if
 
 
@@ -1037,10 +1085,7 @@ contains
             wtlq    = frac_veg_nosno(p)*(elai(p)+esai(p))/rb(p) * rpp   ! leaf
 
             !Litter layer resistance. Added by K.Sakaguchi
-            snow_depth_c = z_dl ! critical depth for 100% litter burial by snow (=litter thickness)
-            fsno_dl = snow_depth(c)/snow_depth_c    ! effective snow cover for (dry)plant litter
-            elai_dl = lai_dl*(1._r8 - min(fsno_dl,1._r8)) ! exposed (dry)litter area index
-            rdl = ( 1._r8 - exp(-elai_dl) ) / ( 0.004_r8*uaf(p)) ! dry litter layer resistance
+            rdl = rdl_num(p) / ( 0.004_r8*uaf(p)) ! dry litter layer resistance
 
             ! add litter resistance and Lee and Pielke 1992 beta
             if (delq(p) < 0._r8) then  !dew. Do not apply beta for negative flux (follow old rsoil)
@@ -1075,9 +1120,7 @@ contains
                erre = efe(p) - efeold
             end if
             ! fractionate ground emitted longwave
-            lw_grnd=(frac_sno(c)*t_soisno(c,snl(c)+1)**4 &
-                 +(1._r8-frac_sno(c)-frac_h2osfc(c))*t_soisno(c,1)**4 &
-                 +frac_h2osfc(c)*t_h2osfc(c)**4)
+            lw_grnd = lw_grnd_p(p)
 
             dt_veg(p) = (sabv(p) + air(p) + bir(p)*t_veg(p)**4 + &
                  cir(p)*lw_grnd - efsh - efe(p)) / &
@@ -1174,12 +1217,6 @@ contains
 
          end do   ! end of filtered pft loop
 
-         do f = 1, fn
-           p = filterp(f)
-           t = veg_pp%topounit(p)
-           lbl_rsc_h2o(p) = getlblcef(forc_rho(t),t_veg(p))*uaf(p)/(uaf(p)**2._r8+1.e-10_r8)   !laminar boundary resistance for h2o over leaf, should I make this consistent for latent heat calculation?
-         enddo
-
          ! Test for convergence
          iter_final = itlef
          itlef = itlef+1
@@ -1205,9 +1242,30 @@ contains
 
       end do ITERATION     ! End stability iteration
       call t_stopf('can_iter')
+#ifndef _OPENACC
+      deallocate(ps_tfac, ps_tfac_flag)
+#endif
 
       fn = fnorig
       filterp(1:fn) = fporig(1:fn)
+
+      ! The FrictionVelocity outputs not used in the iteration (vds, u10, u10_elm,
+      ! u10_with_gusts_elm, va, fv, temp12m and temp22m), from the inputs of each
+      ! patch's last call in the iteration. ustar and fm are not changed after
+      ! that call, and displa and the roughness lengths not during the iteration.
+      call FrictionVelocity (begp, endp, fn, filterp, &
+           displa(begp:endp), z0mv(begp:endp), z0hv(begp:endp), z0qv(begp:endp), &
+           obu_fv(begp:endp), itlef, ur_fv(begp:endp), um_fv(begp:endp), ugust_fv(begp:endp), ustar(begp:endp), &
+           temp1(begp:endp), temp2(begp:endp), temp12m(begp:endp), temp22m(begp:endp), fm(begp:endp), &
+           frictionvel_vars, part=2)
+
+      ! lbl_rsc_h2o is not read inside the iteration, so only each patch's value from
+      ! its last iteration was kept; t_veg and uaf are not changed after that
+      do f = 1, fn
+        p = filterp(f)
+        t = veg_pp%topounit(p)
+        lbl_rsc_h2o(p) = getlblcef(forc_rho(t),t_veg(p))*uaf(p)/(uaf(p)**2._r8+1.e-10_r8)   !laminar boundary resistance for h2o over leaf, should I make this consistent for latent heat calculation?
+      enddo
 
       do f = 1, fn
          p = filterp(f)
@@ -1217,9 +1275,7 @@ contains
 
          ! Energy balance check in canopy
 
-         lw_grnd=(frac_sno(c)*t_soisno(c,snl(c)+1)**4 &
-              +(1._r8-frac_sno(c)-frac_h2osfc(c))*t_soisno(c,1)**4 &
-              +frac_h2osfc(c)*t_h2osfc(c)**4)
+         lw_grnd = lw_grnd_p(p)
 
          err(p) = sabv(p) + air(p) + bir(p)*tlbef(p)**3*(tlbef(p) + 4._r8*dt_veg(p)) &
                                 !+ cir(p)*t_grnd(c)**4 - eflx_sh_veg(p) - hvap*qflx_evap_veg(p)

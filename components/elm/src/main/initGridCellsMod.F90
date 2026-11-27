@@ -662,13 +662,13 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end select
 
-    wtlunit2topounit = wt_lunit(gi,topo_ind, ltype)
-
-    n = ltype - isturb_MIN + 1
-    wtlunit_roof = urbinp%wtlunit_roof(gi,topo_ind,n)
-    wtroad_perv  = urbinp%wtroad_perv(gi,topo_ind,n)
-
     if (npfts > 0) then
+
+       wtlunit2topounit = wt_lunit(gi,topo_ind, ltype)
+
+       n = ltype - isturb_MIN + 1
+       wtlunit_roof = urbinp%wtlunit_roof(gi,topo_ind,n)
+       wtroad_perv  = urbinp%wtroad_perv(gi,topo_ind,n)
 
        call add_landunit(li=li, ti=ti, ltype=ltype, wttopounit=wtlunit2topounit)
 

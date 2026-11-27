@@ -212,7 +212,7 @@ contains
   subroutine Photosynthesis ( bounds, fn, filterp, &
        esat_tv, eair, oair, cair, rb, btran, &
        dayl_factor, atm2lnd_vars, surfalb_vars, solarabs_vars, &
-       canopystate_vars, photosyns_vars, phase)
+       canopystate_vars, photosyns_vars, phase, tfac, tfac_flag, reuse_tfac)
     !
     ! !DESCRIPTION:
     ! Leaf photosynthesis and stomatal conductance calculation as described by
@@ -244,6 +244,9 @@ contains
     type(canopystate_type) , intent(inout)    :: canopystate_vars
     type(photosyns_type)   , intent(inout)    :: photosyns_vars
     character(len=3)       , intent(in)    :: phase                          ! 'sun' or 'sha'
+    real(r8)               , intent(inout) :: tfac(:,:)                      ! (fn,11) temperature factors shared by the sun and sha calls
+    integer                , intent(inout) :: tfac_flag(:)                   ! (fn) 0: none, 1: lmr, 2: lmr and daytime factors in tfac
+    logical                , intent(in)    :: reuse_tfac                     ! true only for the sha call that follows the sun call
 
     !
     ! !LOCAL VARIABLES:
@@ -258,6 +261,7 @@ contains
     real(r8) :: jmax25top      ! canopy top: maximum electron transport rate at 25C (umol electrons/m**2/s)
     real(r8) :: tpu25top       ! canopy top: triose phosphate utilization rate at 25C (umol CO2/m**2/s)
     real(r8) :: lmr25top       ! canopy top: leaf maintenance respiration rate at 25C (umol CO2/m**2/s)
+    real(r8) :: lmr25top_base  ! 2.525e-6 * Q10_mr**0.5, the patch independent part of lmr25top
     real(r8) :: kp25top        ! canopy top: initial slope of CO2 response curve (C4 plants) at 25C
 
     real(r8) :: vcmax25        ! leaf layer: maximum rate of carboxylation at 25C (umol CO2/m**2/s)
@@ -492,7 +496,6 @@ contains
          tpuhd   = veg_vp%tpuhd(veg_pp%itype(p))   !200000._r8
          lmrhd   = veg_vp%lmrhd(veg_pp%itype(p))   !150650._r8
          lmrse   = veg_vp%lmrse(veg_pp%itype(p))   !490._r8
-         lmrc    = fth25 (lmrhd, lmrse)
 
          ! C3 or C4 photosynthesis logical variable
 
@@ -536,15 +539,27 @@ contains
          sco  = 0.5_r8 * 0.209_r8 / (42.75_r8 / 1.e06_r8)
          cp25 = 0.5_r8 * oair(p) / sco
 
-         kc(p) = kc25 * ft(t_veg(p), kcha)
-         ko(p) = ko25 * ft(t_veg(p), koha)
-         cp(p) = cp25 * ft(t_veg(p), cpha)
+         ! The sha call sees the same t_veg, forc_pbot and oair as the sun call,
+         ! so kc, ko and cp left by the sun call are already the values computed here
+         if (.not. reuse_tfac) then
+            kc(p) = kc25 * ft(t_veg(p), kcha)
+            ko(p) = ko25 * ft(t_veg(p), koha)
+            cp(p) = cp25 * ft(t_veg(p), cpha)
+         end if
 
       end do
+
+      ! lmrc is a scalar, so only the value from the last filter patch was ever used below
+      if (fn > 0) lmrc = fth25 (lmrhd, lmrse)
 
       ! Multi-layer parameters scaled by leaf nitrogen profile.
       ! Loop through each canopy layer to calculate nitrogen profile using
       ! cumulative lai at the midpoint of the layer
+
+      ! Patch independent part of lmr25top below (same expression, computed once)
+      if (use_cn) then
+         lmr25top_base = 2.525e-6_r8 * (ParamsShareInst%Q10_mr ** ((25._r8 - 20._r8)/10._r8))
+      end if
 
       do f = 1, fn
          p = filterp(f)
@@ -677,11 +692,14 @@ contains
          ! Remove daylength factor from vcmax25 so that kn is based on maximum vcmax25
          ! But not used as defined here if using sun/shade big leaf code. Instead,
          ! will use canopy integrated scaling factors from SurfaceAlbedo.
+         ! kn is only read by the multi-layer code (nlevcan > 1), so skip it otherwise.
 
-         if (dayl_factor(p) .eq. 0._r8) then
-            kn(p) =  0._r8
-         else
-            kn(p) = exp(0.00963_r8 * vcmax25top/dayl_factor(p) - 2.43_r8)
+         if (nlevcan > 1) then
+            if (dayl_factor(p) .eq. 0._r8) then
+               kn(p) =  0._r8
+            else
+               kn(p) = exp(0.00963_r8 * vcmax25top/dayl_factor(p) - 2.43_r8)
+            end if
          end if
 
          if (use_cn) then
@@ -701,7 +719,7 @@ contains
             !
             ! Then scale this value at the top of the canopy for canopy depth
 
-            lmr25top = 2.525e-6_r8 * (ParamsShareInst%Q10_mr ** ((25._r8 - 20._r8)/10._r8))
+            lmr25top = lmr25top_base
             lmr25top = lmr25top * lnc(p) / 12.e-06_r8
          else
             ! Leaf maintenance respiration in proportion to vcmax25top
@@ -715,6 +733,10 @@ contains
 
          ! Loop through canopy layers (above snow). Respiration needs to be
          ! calculated every timestep. Others are calculated only if daytime
+         ! The temperature factors depend only on t_veg, t10 and the last filter
+         ! patch's parameters, which are the same in the sun and sha calls, so the
+         ! sha call reuses the factors stored by the sun call.
+         if (.not. reuse_tfac) tfac_flag(f) = 0
          laican = 0._r8
          rad_layers_patch = nrad(p)
          do iv = 1, rad_layers_patch
@@ -738,11 +760,21 @@ contains
             ! Maintenance respiration
 
             lmr25 = lmr25top * nscaler
+            if (tfac_flag(f) < 1) then
+               if (c3flag(p)) then
+                  tfac(f,1) = ft(t_veg(p), lmrha)
+                  tfac(f,2) = fth(t_veg(p), lmrhd, lmrse, lmrc)
+               else
+                  tfac(f,1) = 2._r8**((t_veg(p)-(tfrz+25._r8))/10._r8)
+                  tfac(f,2) = 1._r8 + exp( 1.3_r8*(t_veg(p)-(tfrz+55._r8)) )
+               end if
+               tfac_flag(f) = 1
+            end if
             if (c3flag(p)) then
-               lmr_z(p,iv) = lmr25 * ft(t_veg(p), lmrha) * fth(t_veg(p), lmrhd, lmrse, lmrc)
+               lmr_z(p,iv) = lmr25 * tfac(f,1) * tfac(f,2)
             else
-               lmr_z(p,iv) = lmr25 * 2._r8**((t_veg(p)-(tfrz+25._r8))/10._r8)
-               lmr_z(p,iv) = lmr_z(p,iv) / (1._r8 + exp( 1.3_r8*(t_veg(p)-(tfrz+55._r8)) ))
+               lmr_z(p,iv) = lmr25 * tfac(f,1)
+               lmr_z(p,iv) = lmr_z(p,iv) / tfac(f,2)
             end if
 
             if (par_z(p,iv) <= 0._r8) then           ! night time
@@ -765,23 +797,37 @@ contains
 
                ! Adjust for temperature
 
-               vcmaxse = 668.39_r8 - 1.07_r8 * min(max((t10(p)-tfrz),11._r8),35._r8)
-               jmaxse  = 659.70_r8 - 0.75_r8 * min(max((t10(p)-tfrz),11._r8),35._r8)
-               tpuse = vcmaxse
-               vcmaxc = fth25 (vcmaxhd, vcmaxse)
-               jmaxc  = fth25 (jmaxhd, jmaxse)
-               tpuc   = fth25 (tpuhd, tpuse)
-               vcmax_z(p,iv) = vcmax25 * ft(t_veg(p), vcmaxha) * fth(t_veg(p), vcmaxhd, vcmaxse, vcmaxc)
-               jmax_z(p,iv) = jmax25 * ft(t_veg(p), jmaxha) * fth(t_veg(p), jmaxhd, jmaxse, jmaxc)
-               tpu_z(p,iv) = tpu25 * ft(t_veg(p), tpuha) * fth(t_veg(p), tpuhd, tpuse, tpuc)
+               if (tfac_flag(f) < 2) then
+                  vcmaxse = 668.39_r8 - 1.07_r8 * min(max((t10(p)-tfrz),11._r8),35._r8)
+                  jmaxse  = 659.70_r8 - 0.75_r8 * min(max((t10(p)-tfrz),11._r8),35._r8)
+                  tpuse = vcmaxse
+                  vcmaxc = fth25 (vcmaxhd, vcmaxse)
+                  jmaxc  = fth25 (jmaxhd, jmaxse)
+                  tpuc   = fth25 (tpuhd, tpuse)
+                  tfac(f,3) = ft(t_veg(p), vcmaxha)
+                  tfac(f,4) = fth(t_veg(p), vcmaxhd, vcmaxse, vcmaxc)
+                  tfac(f,5) = ft(t_veg(p), jmaxha)
+                  tfac(f,6) = fth(t_veg(p), jmaxhd, jmaxse, jmaxc)
+                  tfac(f,7) = ft(t_veg(p), tpuha)
+                  tfac(f,8) = fth(t_veg(p), tpuhd, tpuse, tpuc)
+                  tfac(f,9) = 2._r8**((t_veg(p)-(tfrz+25._r8))/10._r8)
+                  if (.not. c3flag(p)) then
+                     tfac(f,10) = 1._r8 + exp( 0.2_r8*((tfrz+15._r8)-t_veg(p)) )
+                     tfac(f,11) = 1._r8 + exp( 0.3_r8*(t_veg(p)-(tfrz+40._r8)) )
+                  end if
+                  tfac_flag(f) = 2
+               end if
+               vcmax_z(p,iv) = vcmax25 * tfac(f,3) * tfac(f,4)
+               jmax_z(p,iv) = jmax25 * tfac(f,5) * tfac(f,6)
+               tpu_z(p,iv) = tpu25 * tfac(f,7) * tfac(f,8)
 
                if (.not. c3flag(p)) then
-                  vcmax_z(p,iv) = vcmax25 * 2._r8**((t_veg(p)-(tfrz+25._r8))/10._r8)
-                  vcmax_z(p,iv) = vcmax_z(p,iv) / (1._r8 + exp( 0.2_r8*((tfrz+15._r8)-t_veg(p)) ))
-                  vcmax_z(p,iv) = vcmax_z(p,iv) / (1._r8 + exp( 0.3_r8*(t_veg(p)-(tfrz+40._r8)) ))
+                  vcmax_z(p,iv) = vcmax25 * tfac(f,9)
+                  vcmax_z(p,iv) = vcmax_z(p,iv) / tfac(f,10)
+                  vcmax_z(p,iv) = vcmax_z(p,iv) / tfac(f,11)
                end if
 
-               kp_z(p,iv) = kp25 * 2._r8**((t_veg(p)-(tfrz+25._r8))/10._r8)
+               kp_z(p,iv) = kp25 * tfac(f,9)
 
             end if
 
@@ -1481,96 +1527,139 @@ contains
 
     real(r8) :: aquad, bquad, cquad  ! terms for quadratic equations
     real(r8) :: r1, r2               ! roots of quadratic equation
+    real(r8) :: qq                   ! temporary term for the quadratic solution
     real(r8) :: fnps                 ! fraction of light absorbed by non-photosynthetic pigments
     real(r8) :: theta_psii           ! empirical curvature parameter for electron transport rate
     real(r8) :: theta_ip             ! empirical curvature parameter for ap photosynthesis co-limitation
+    real(r8) :: forc_pbot            ! atmospheric pressure (Pa)
+    real(r8) :: ac, aj, ap, ag, an   ! this layer's ac, aj, ap, ag and an (umol CO2/m**2/s)
     !------------------------------------------------------------------------------
 
-    associate(&
-         forc_pbot  => top_as%pbot                             , & ! Output: [real(r8) (:)   ]  atmospheric pressure (Pa)
-         c3flag     => photosyns_vars%c3flag_patch             , & ! Output: [logical  (:)   ]  true if C3 and false if C4
-         ac         => photosyns_vars%ac_patch                 , & ! Output: [real(r8) (:,:) ]  Rubisco-limited gross photosynthesis (umol CO2/m**2/s)
-         aj         => photosyns_vars%aj_patch                 , & ! Output: [real(r8) (:,:) ]  RuBP-limited gross photosynthesis (umol CO2/m**2/s)
-         ap         => photosyns_vars%ap_patch                 , & ! Output: [real(r8) (:,:) ]  product-limited (C3) or CO2-limited (C4) gross photosynthesis (umol CO2/m**2/s)
-         ag         => photosyns_vars%ag_patch                 , & ! Output: [real(r8) (:,:) ]  co-limited gross leaf photosynthesis (umol CO2/m**2/s)
-         an         => photosyns_vars%an_patch                 , & ! Output: [real(r8) (:,:) ]  net leaf photosynthesis (umol CO2/m**2/s)
-         vcmax_z    => photosyns_vars%vcmax_z_patch            , & ! Input:  [real(r8) (:,:) ]  maximum rate of carboxylation (umol co2/m**2/s)
-         cp         => photosyns_vars%cp_patch                 , & ! Output: [real(r8) (:)   ]  CO2 compensation point (Pa)
-         kc         => photosyns_vars%kc_patch                 , & ! Output: [real(r8) (:)   ]  Michaelis-Menten constant for CO2 (Pa)
-         ko         => photosyns_vars%ko_patch                 , & ! Output: [real(r8) (:)   ]  Michaelis-Menten constant for O2 (Pa)
-         qe         => photosyns_vars%qe_patch                 , & ! Output: [real(r8) (:)   ]  quantum efficiency, used only for C4 (mol CO2 / mol photons)
-         tpu_z      => photosyns_vars%tpu_z_patch              , & ! Output: [real(r8) (:,:) ]  triose phosphate utilization rate (umol CO2/m**2/s)
-         kp_z       => photosyns_vars%kp_z_patch               , & ! Output: [real(r8) (:,:) ]  initial slope of CO2 response curve (C4 plants)
-         theta_cj   => photosyns_vars%theta_cj_patch           , & ! Output: [real(r8) (:)   ]  empirical curvature parameter for ac, aj photosynthesis co-limitation
-         bbb        => photosyns_vars%bbb_patch                , & ! Output: [real(r8) (:)   ]  Ball-Berry minimum leaf conductance (umol H2O/m**2/s)
-         mbb        => photosyns_vars%mbb_patch                  & ! Output: [real(r8) (:)   ]  Ball-Berry slope of conductance-photosynthesis relationship
-         )
+    ! The photosyns_vars arrays are referenced directly, not through an associate
+    ! block: the associate copied the descriptors of 17 arrays on every call, more
+    ! work than the arithmetic below. The arithmetic and its operand order are
+    ! unchanged, and ac, aj, ap, ag and an are stored as before.
+    ! The three quadratic solves are written out with the same expressions as
+    ! QuadraticMod's quadratic, which is in another file and so is not inlined.
 
       ! Miscellaneous parameters, from Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
       fnps = 0.15_r8
       theta_psii = 0.7_r8
       theta_ip = 0.95_r8
 
-      if (c3flag(p)) then
+      forc_pbot = top_as%pbot(t)
+
+      if (photosyns_vars%c3flag_patch(p)) then
          ! C3: Rubisco-limited photosynthesis
-         ac(p,iv) = vcmax_z(p,iv) * max(ci-cp(p), 0._r8) / (ci+kc(p)*(1._r8+oair/ko(p)))
+         ac = photosyns_vars%vcmax_z_patch(p,iv) * max(ci-photosyns_vars%cp_patch(p), 0._r8) / &
+              (ci+photosyns_vars%kc_patch(p)*(1._r8+oair/photosyns_vars%ko_patch(p)))
 
          ! C3: RuBP-limited photosynthesis
-         aj(p,iv) = je * max(ci-cp(p), 0._r8) / (4._r8*ci+8._r8*cp(p))
+         aj = je * max(ci-photosyns_vars%cp_patch(p), 0._r8) / (4._r8*ci+8._r8*photosyns_vars%cp_patch(p))
 
          ! C3: Product-limited photosynthesis
-         ap(p,iv) = 3._r8 * tpu_z(p,iv)
+         ap = 3._r8 * photosyns_vars%tpu_z_patch(p,iv)
 
       else
 
          ! C4: Rubisco-limited photosynthesis
-         ac(p,iv) = vcmax_z(p,iv)
+         ac = photosyns_vars%vcmax_z_patch(p,iv)
 
          ! C4: RuBP-limited photosynthesis
-         aj(p,iv) = qe(p) * par_z * 4.6_r8
+         aj = photosyns_vars%qe_patch(p) * par_z * 4.6_r8
 
          ! C4: PEP carboxylase-limited (CO2-limited)
-         ap(p,iv) = kp_z(p,iv) * max(ci, 0._r8) / forc_pbot(t)
+         ap = photosyns_vars%kp_z_patch(p,iv) * max(ci, 0._r8) / forc_pbot
 
       end if
 
       ! Gross photosynthesis. First co-limit ac and aj. Then co-limit ap
 
-      aquad = theta_cj(p)
-      bquad = -(ac(p,iv) + aj(p,iv))
-      cquad = ac(p,iv) * aj(p,iv)
-      call quadratic (aquad, bquad, cquad, r1, r2)
+      aquad = photosyns_vars%theta_cj_patch(p)
+      bquad = -(ac + aj)
+      cquad = ac * aj
+      ! quadratic (aquad, bquad, cquad, r1, r2) written out, as in QuadraticMod
+      if (aquad == 0._r8) then
+         write (iulog,*) 'Quadratic solution error: a = ',aquad
+         call endrun(msg=errmsg(__FILE__, __LINE__))
+      end if
+      if (bquad >= 0._r8) then
+         qq = -0.5_r8 * (bquad + sqrt(bquad*bquad - 4._r8*aquad*cquad))
+      else
+         qq = -0.5_r8 * (bquad - sqrt(bquad*bquad - 4._r8*aquad*cquad))
+      end if
+      r1 = qq / aquad
+      if (qq /= 0._r8) then
+         r2 = cquad / qq
+      else
+         r2 = 1.e36_r8
+      end if
       ai = min(r1,r2)
 
       aquad = theta_ip
-      bquad = -(ai + ap(p,iv))
-      cquad = ai * ap(p,iv)
-      call quadratic (aquad, bquad, cquad, r1, r2)
-      ag(p,iv) = min(r1,r2)
+      bquad = -(ai + ap)
+      cquad = ai * ap
+      ! quadratic (aquad, bquad, cquad, r1, r2) written out, as in QuadraticMod
+      if (aquad == 0._r8) then
+         write (iulog,*) 'Quadratic solution error: a = ',aquad
+         call endrun(msg=errmsg(__FILE__, __LINE__))
+      end if
+      if (bquad >= 0._r8) then
+         qq = -0.5_r8 * (bquad + sqrt(bquad*bquad - 4._r8*aquad*cquad))
+      else
+         qq = -0.5_r8 * (bquad - sqrt(bquad*bquad - 4._r8*aquad*cquad))
+      end if
+      r1 = qq / aquad
+      if (qq /= 0._r8) then
+         r2 = cquad / qq
+      else
+         r2 = 1.e36_r8
+      end if
+      ag = min(r1,r2)
 
       ! Net photosynthesis. Exit iteration if an < 0
 
-      an(p,iv) = ag(p,iv) - lmr_z
-      if (an(p,iv) < 0._r8) then
+      an = ag - lmr_z
+
+      photosyns_vars%ac_patch(p,iv) = ac
+      photosyns_vars%aj_patch(p,iv) = aj
+      photosyns_vars%ap_patch(p,iv) = ap
+      photosyns_vars%ag_patch(p,iv) = ag
+      photosyns_vars%an_patch(p,iv) = an
+
+      if (an < 0._r8) then
          fval = 0._r8
          return
       endif
       ! Quadratic gs_mol calculation with an known. Valid for an >= 0.
       ! With an <= 0, then gs_mol = bbb
 
-      cs = cair - 1.4_r8/gb_mol * an(p,iv) * forc_pbot(t)
+      cs = cair - 1.4_r8/gb_mol * an * forc_pbot
       cs = max(cs,1.e-06_r8)
       aquad = cs
-      bquad = cs*(gb_mol - bbb(p)) - mbb(p)*an(p,iv)*forc_pbot(t)
-      cquad = -gb_mol*(cs*bbb(p) + mbb(p)*an(p,iv)*forc_pbot(t)*rh_can)
-      call quadratic (aquad, bquad, cquad, r1, r2)
+      bquad = cs*(gb_mol - photosyns_vars%bbb_patch(p)) - photosyns_vars%mbb_patch(p)*an*forc_pbot
+      cquad = -gb_mol*(cs*photosyns_vars%bbb_patch(p) + photosyns_vars%mbb_patch(p)*an*forc_pbot*rh_can)
+      ! quadratic (aquad, bquad, cquad, r1, r2) written out, as in QuadraticMod
+      if (aquad == 0._r8) then
+         write (iulog,*) 'Quadratic solution error: a = ',aquad
+         call endrun(msg=errmsg(__FILE__, __LINE__))
+      end if
+      if (bquad >= 0._r8) then
+         qq = -0.5_r8 * (bquad + sqrt(bquad*bquad - 4._r8*aquad*cquad))
+      else
+         qq = -0.5_r8 * (bquad - sqrt(bquad*bquad - 4._r8*aquad*cquad))
+      end if
+      r1 = qq / aquad
+      if (qq /= 0._r8) then
+         r2 = cquad / qq
+      else
+         r2 = 1.e36_r8
+      end if
       gs_mol = max(r1,r2)
 
       ! Derive new estimate for ci
 
-      fval =ci - cair + an(p,iv) * forc_pbot(t) * (1.4_r8*gs_mol+1.6_r8*gb_mol) / (gb_mol*gs_mol)
-
-    end associate
+      fval =ci - cair + an * forc_pbot * (1.4_r8*gs_mol+1.6_r8*gb_mol) / (gb_mol*gs_mol)
 
   end subroutine ci_func
   !------------------------------------------------------------------------------
