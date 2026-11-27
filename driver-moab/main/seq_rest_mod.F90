@@ -20,6 +20,7 @@
 
 module seq_rest_mod
 
+  use seq_comm_mct, only: num_inst_frc, num_inst_atm, num_inst_xao, num_inst_ocn, num_inst_ice, num_inst_rof, num_inst_glc, num_inst_lnd
   ! !USES:
 
   use shr_kind_mod,      only: R8 => SHR_KIND_R8, IN => SHR_KIND_IN
@@ -200,6 +201,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
     real(r8), dimension(:,:), pointer  :: p_l2gacc_lm
 
     character(len=*), parameter :: subname = "(seq_rest_mb_read) "
+    integer :: kinst  ! MOAB instance index
 
     !-------------------------------------------------------------------------------
     !
@@ -245,11 +247,17 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
     if (iamin_CPLID) then
         call seq_io_read(moab_rest_file, num_moab_exports, 'seq_num_moab_exports')
         if (atm_present) then
-           call seq_io_read(moab_rest_file, mbaxid, 'fractions_ax', 'afrac:ifrac:ofrac:lfrac:lfrin')
-           call seq_io_read(moab_rest_file, mbaxid, 'a2x_ax', &
-              trim(seq_flds_a2x_fields) )
-           call seq_io_read(moab_rest_file, mbaxid, 'xao_ax', &
-              trim(seq_flds_xao_fields) )
+           do kinst = 1,num_inst_frc
+              call seq_io_read(moab_rest_file, mbaxid, 'fractions_ax', 'afrac:ifrac:ofrac:lfrac:lfrin', inst=kinst)
+           enddo
+           do kinst = 1,num_inst_atm
+              call seq_io_read(moab_rest_file, mbaxid, 'a2x_ax', &
+                 trim(seq_flds_a2x_fields) , inst=kinst)
+           enddo
+           do kinst = 1,num_inst_xao
+              call seq_io_read(moab_rest_file, mbaxid, 'xao_ax', &
+                 trim(seq_flds_xao_fields) , inst=kinst)
+           enddo
         endif
         if (lnd_present) then
              if(samegrid_al) then
@@ -262,18 +270,24 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
                 else
                    nx_lnd = ngv ! atm mesh is a point cloud
                 endif
-                call seq_io_read(moab_rest_file, mblxid, 'fractions_lx', &
-                   'afrac:lfrac:lfrin', nx=nx_lnd)
+                do kinst = 1,num_inst_frc
+                   call seq_io_read(moab_rest_file, mblxid, 'fractions_lx', &
+                      'afrac:lfrac:lfrin', nx=nx_lnd, inst=kinst)
+                enddo
              else if(samegrid_lr) then
                ! land is on the rof mesh; max global land id comes from rof.
                ! The rof mesh is cell-based, so use the global element count.
                ierr = iMOAB_GetGlobalInfo(mbrxid, ngv, nge)
                nx_lnd = nge
-               call seq_io_read(moab_rest_file, mblxid, 'fractions_lx', &
-                  'afrac:lfrac:lfrin', nx=nx_lnd)
+               do kinst = 1,num_inst_frc
+                  call seq_io_read(moab_rest_file, mblxid, 'fractions_lx', &
+                     'afrac:lfrac:lfrin', nx=nx_lnd, inst=kinst)
+               enddo
              else ! is this ever true  ?
-                call seq_io_read(moab_rest_file, mblxid, 'fractions_lx', &
-                   'afrac:lfrac:lfrin')
+                do kinst = 1,num_inst_frc
+                   call seq_io_read(moab_rest_file, mblxid, 'fractions_lx', &
+                      'afrac:lfrac:lfrin', inst=kinst)
+                enddo
              endif
         endif
        if (lnd_present .and. rof_prognostic) then
@@ -290,21 +304,30 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
                 else
                    nx_lnd = ngv ! atm mesh is a point cloud
                 endif
-                call seq_io_read(moab_rest_file, mblxid, 'l2racc_lx', &
-                 trim(tagname), &
-                 matrix = p_l2racc_lm, nx=nx_lnd)
+                do kinst = 1,num_inst_lnd
+                   p_l2racc_lm => prep_rof_get_l2racc_lm(kinst)
+                   call seq_io_read(moab_rest_file, mblxid, 'l2racc_lx', &
+                    trim(tagname), &
+                    matrix = p_l2racc_lm, nx=nx_lnd, inst=kinst)
+                enddo
              else if(samegrid_lr) then
                ! land is on the rof mesh; max global land id comes from rof.
                ! The rof mesh is cell-based, so use the global element count.
                ierr = iMOAB_GetGlobalInfo(mbrxid, ngv, nge)
                nx_lnd = nge
-               call seq_io_read(moab_rest_file, mblxid, 'l2racc_lx', &
-                trim(tagname), &
-                matrix = p_l2racc_lm, nx=nx_lnd)
+               do kinst = 1,num_inst_lnd
+                  p_l2racc_lm => prep_rof_get_l2racc_lm(kinst)
+                  call seq_io_read(moab_rest_file, mblxid, 'l2racc_lx', &
+                   trim(tagname), &
+                   matrix = p_l2racc_lm, nx=nx_lnd, inst=kinst)
+               enddo
              else
-                call seq_io_read(moab_rest_file, mblxid, 'l2racc_lx', &
-                 trim(tagname), &
-                 matrix = p_l2racc_lm )
+                do kinst = 1,num_inst_lnd
+                   p_l2racc_lm => prep_rof_get_l2racc_lm(kinst)
+                   call seq_io_read(moab_rest_file, mblxid, 'l2racc_lx', &
+                    trim(tagname), &
+                    matrix = p_l2racc_lm , inst=kinst)
+                enddo
              endif
              call seq_io_read(rest_file, l2racc_lm_cnt ,'l2racc_lx_cnt')
        end if
@@ -312,9 +335,12 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
              tagname = prep_rof_get_sharedFieldsOcnRof()
              o2racc_om_cnt => prep_rof_get_o2racc_om_cnt()
              p_o2racc_om => prep_rof_get_o2racc_om()
-             call seq_io_read(moab_rest_file, mboxid, 'o2racc_ox', &
-                 trim(tagname), &
-                 matrix = p_o2racc_om )
+             do kinst = 1,num_inst_ocn
+                p_o2racc_om => prep_rof_get_o2racc_om(kinst)
+                call seq_io_read(moab_rest_file, mboxid, 'o2racc_ox', &
+                    trim(tagname), &
+                    matrix = p_o2racc_om , inst=kinst)
+             enddo
              call seq_io_read(moab_rest_file, o2racc_om_cnt, 'o2racc_ox_cnt')
        end if
        if (lnd_present .and. glc_prognostic) then
@@ -357,41 +383,62 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
 !        end if
 
        if (ocn_present) then
-           call seq_io_read(moab_rest_file, mboxid,  'fractions_ox', &
-              'afrac:ifrac:ofrac:ifrad:ofrad') ! fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
-           call seq_io_read(moab_rest_file, mboxid,  'o2x_ox', &
-                  trim(seq_flds_o2x_fields))
+           do kinst = 1,num_inst_frc
+              call seq_io_read(moab_rest_file, mboxid,  'fractions_ox', &
+                 'afrac:ifrac:ofrac:ifrad:ofrad', inst=kinst) ! fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
+           enddo
+           do kinst = 1,num_inst_ocn
+              call seq_io_read(moab_rest_file, mboxid,  'o2x_ox', &
+                     trim(seq_flds_o2x_fields), inst=kinst)
+           enddo
            tagname = trim(seq_flds_x2o_fields)
            x2oacc_om_cnt => prep_ocn_get_x2oacc_om_cnt()
            p_x2oacc_om => prep_ocn_get_x2oacc_om()
 
-           call seq_io_read (moab_rest_file, mboxid, 'x2oacc_ox', &
-                  trim(tagname), &
-                  matrix=p_x2oacc_om)
+           do kinst = 1,num_inst_ocn
+              p_x2oacc_om => prep_ocn_get_x2oacc_om(kinst)
+              call seq_io_read (moab_rest_file, mboxid, 'x2oacc_ox', &
+                     trim(tagname), &
+                     matrix=p_x2oacc_om, inst=kinst)
+           enddo
            call seq_io_read(moab_rest_file, x2oacc_om_cnt, 'x2oacc_ox_cnt')
       !           tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
       !  arrsize = nxflds * lsize !        allocate (xao_om (lsize, nxflds))
       !  ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, arrsize , ent_type, xao_om)
-           call seq_io_read(moab_rest_file, mbofxid, 'xao_ox', &
-              trim(seq_flds_xao_fields) )
+           do kinst = 1,num_inst_xao
+              call seq_io_read(moab_rest_file, mbofxid, 'xao_ox', &
+                 trim(seq_flds_xao_fields) , inst=kinst)
+           enddo
        endif
        if (ice_present) then
-           call seq_io_read(moab_rest_file, mbixid, 'fractions_ix', &
-               'afrac:ifrac:ofrac')  ! fraclist_i = 'afrac:ifrac:ofrac'
-           call seq_io_read(moab_rest_file, mbixid, 'i2x_ix', &
-               trim(seq_flds_i2x_fields) )
+           do kinst = 1,num_inst_frc
+              call seq_io_read(moab_rest_file, mbixid, 'fractions_ix', &
+                  'afrac:ifrac:ofrac', inst=kinst)  ! fraclist_i = 'afrac:ifrac:ofrac'
+           enddo
+           do kinst = 1,num_inst_ice
+              call seq_io_read(moab_rest_file, mbixid, 'i2x_ix', &
+                  trim(seq_flds_i2x_fields) , inst=kinst)
+           enddo
        endif
        if (rof_present) then
-           call seq_io_read(moab_rest_file, mbrxid, 'fractions_rx', &
-               'lfrac:lfrin:rfrac') ! fraclist_r = 'lfrac:lfrin:rfrac'
-           call seq_io_read(moab_rest_file, mbrxid, 'r2x_rx', &
-               trim(seq_flds_r2x_fields) )
+           do kinst = 1,num_inst_frc
+              call seq_io_read(moab_rest_file, mbrxid, 'fractions_rx', &
+                  'lfrac:lfrin:rfrac', inst=kinst) ! fraclist_r = 'lfrac:lfrin:rfrac'
+           enddo
+           do kinst = 1,num_inst_rof
+              call seq_io_read(moab_rest_file, mbrxid, 'r2x_rx', &
+                  trim(seq_flds_r2x_fields) , inst=kinst)
+           enddo
        endif
        if (glc_present) then
-           call seq_io_read(moab_rest_file, mbgxid, 'fractions_gx', &
-               'gfrac:lfrac') ! fraclist_g = 'gfrac:lfrac'
-           call seq_io_read(moab_rest_file, mbgxid, 'g2x_gx', &
-               trim(seq_flds_g2x_fields) )
+           do kinst = 1,num_inst_frc
+              call seq_io_read(moab_rest_file, mbgxid, 'fractions_gx', &
+                  'gfrac:lfrac', inst=kinst) ! fraclist_g = 'gfrac:lfrac'
+           enddo
+           do kinst = 1,num_inst_glc
+              call seq_io_read(moab_rest_file, mbgxid, 'g2x_gx', &
+                  trim(seq_flds_g2x_fields) , inst=kinst)
+           enddo
        endif
 !MOABTODO
 !        if (wav_present) then
@@ -515,6 +562,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
     real(r8), dimension(:,:), pointer  :: p_l2racc_lm
     real(r8), dimension(:,:), pointer  :: p_l2gacc_lm
     character(len=*),parameter :: subname = "(seq_rest_mb_write) "
+    integer :: kinst  ! MOAB instance index
 
     !-------------------------------------------------------------------------------
     !
@@ -666,15 +714,21 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
           endif
 
           if (atm_present) then
-             call seq_io_write(rest_file, mbaxid, 'fractions_ax', &
-              'afrac:ifrac:ofrac:lfrac:lfrin', &
-               whead=whead, wdata=wdata)
-             call seq_io_write(rest_file, mbaxid, 'a2x_ax', &
-                 trim(seq_flds_a2x_fields), &
-                 whead=whead, wdata=wdata)
-             call seq_io_write(rest_file, mbaxid, 'xao_ax', &
-                 trim(seq_flds_xao_fields), &
-                 whead=whead, wdata=wdata)
+             do kinst = 1,num_inst_frc
+                call seq_io_write(rest_file, mbaxid, 'fractions_ax', &
+                 'afrac:ifrac:ofrac:lfrac:lfrin', &
+                  whead=whead, wdata=wdata, inst=kinst)
+             enddo
+             do kinst = 1,num_inst_atm
+                call seq_io_write(rest_file, mbaxid, 'a2x_ax', &
+                    trim(seq_flds_a2x_fields), &
+                    whead=whead, wdata=wdata, inst=kinst)
+             enddo
+             do kinst = 1,num_inst_xao
+                call seq_io_write(rest_file, mbaxid, 'xao_ax', &
+                    trim(seq_flds_xao_fields), &
+                    whead=whead, wdata=wdata, inst=kinst)
+             enddo
           endif
 
           if (lnd_present) then
@@ -688,26 +742,32 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
                 else
                    nx_lnd = ngv ! atm mesh is a point cloud
                 endif
-                call seq_io_write(rest_file, mblxid, 'fractions_lx', &
-                 'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
-                  whead=whead, wdata=wdata, nx=nx_lnd)
+                do kinst = 1,num_inst_frc
+                   call seq_io_write(rest_file, mblxid, 'fractions_lx', &
+                    'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
+                     whead=whead, wdata=wdata, nx=nx_lnd, inst=kinst)
+                enddo
              else if(samegrid_lr) then
                ! land is on the rof mesh; max global land id comes from rof.
                ! The rof mesh is cell-based, so use the global element count.
                ierr = iMOAB_GetGlobalInfo(mbrxid, ngv, nge)
                nx_lnd = nge
-               call seq_io_write(rest_file, mblxid, 'fractions_lx', &
-                'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
-                 whead=whead, wdata=wdata, nx=nx_lnd)
+               do kinst = 1,num_inst_frc
+                  call seq_io_write(rest_file, mblxid, 'fractions_lx', &
+                   'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
+                    whead=whead, wdata=wdata, nx=nx_lnd, inst=kinst)
+               enddo
              else
                 ! land on its own (masked) grid, distinct from atm and rof: size the
                 ! PIO global dim from the land grid dims in infodata, exactly as the
                 ! cpl.hi history write does (seq_hist_mod). mblxid's num_global_elems
                 ! is the packed active-cell count and is smaller than the max land
                 ! GLOBAL_ID, which would scramble lfrac/lfrin on restart.
-                call seq_io_write(rest_file, mblxid, 'fractions_lx', &
-                 'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
-                  whead=whead, wdata=wdata, nx=lnd_nx, ny=lnd_ny)
+                do kinst = 1,num_inst_frc
+                   call seq_io_write(rest_file, mblxid, 'fractions_lx', &
+                    'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
+                     whead=whead, wdata=wdata, nx=lnd_nx, ny=lnd_ny, inst=kinst)
+                enddo
              endif
           endif
           if (lnd_present .and. rof_prognostic) then
@@ -724,22 +784,31 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
                 else
                    nx_lnd = ngv ! atm mesh is a point cloud
                 endif
-                call seq_io_write(rest_file, mblxid, 'l2racc_lx', &
-                 trim(tagname), &
-                 whead=whead, wdata=wdata, matrix = p_l2racc_lm, nx=nx_lnd)
+                do kinst = 1,num_inst_lnd
+                   p_l2racc_lm => prep_rof_get_l2racc_lm(kinst)
+                   call seq_io_write(rest_file, mblxid, 'l2racc_lx', &
+                    trim(tagname), &
+                    whead=whead, wdata=wdata, matrix = p_l2racc_lm, nx=nx_lnd, inst=kinst)
+                enddo
              else if(samegrid_lr) then
                ! land is on the rof mesh; max global land id comes from rof.
                ! The rof mesh is cell-based, so use the global element count.
                ierr = iMOAB_GetGlobalInfo(mbrxid, ngv, nge)
                nx_lnd = nge
-               call seq_io_write(rest_file, mblxid, 'l2racc_lx', &
-                trim(tagname), &
-                whead=whead, wdata=wdata, matrix = p_l2racc_lm, nx=nx_lnd)
+               do kinst = 1,num_inst_lnd
+                  p_l2racc_lm => prep_rof_get_l2racc_lm(kinst)
+                  call seq_io_write(rest_file, mblxid, 'l2racc_lx', &
+                   trim(tagname), &
+                   whead=whead, wdata=wdata, matrix = p_l2racc_lm, nx=nx_lnd, inst=kinst)
+               enddo
              else
                 ! land on its own (masked) grid: size PIO global dim from infodata land dims
-                call seq_io_write(rest_file, mblxid, 'l2racc_lx', &
-                 trim(tagname), &
-                 whead=whead, wdata=wdata, matrix = p_l2racc_lm, nx=lnd_nx, ny=lnd_ny )
+                do kinst = 1,num_inst_lnd
+                   p_l2racc_lm => prep_rof_get_l2racc_lm(kinst)
+                   call seq_io_write(rest_file, mblxid, 'l2racc_lx', &
+                    trim(tagname), &
+                    whead=whead, wdata=wdata, matrix = p_l2racc_lm, nx=lnd_nx, ny=lnd_ny , inst=kinst)
+                enddo
              endif
              call seq_io_write(rest_file, l2racc_lm_cnt, 'l2racc_lx_cnt', &
                  whead=whead, wdata=wdata)
@@ -748,9 +817,12 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
              tagname = prep_rof_get_sharedFieldsOcnRof()
              o2racc_om_cnt => prep_rof_get_o2racc_om_cnt()
              p_o2racc_om => prep_rof_get_o2racc_om() ! still write o2racc_ox and o2racc_ox_cnt
-             call seq_io_write(rest_file, mboxid, 'o2racc_ox', &
-                 trim(tagname), &
-                 whead=whead, wdata=wdata, matrix = p_o2racc_om )
+             do kinst = 1,num_inst_ocn
+                p_o2racc_om => prep_rof_get_o2racc_om(kinst)
+                call seq_io_write(rest_file, mboxid, 'o2racc_ox', &
+                    trim(tagname), &
+                    whead=whead, wdata=wdata, matrix = p_o2racc_om , inst=kinst)
+             enddo
              call seq_io_write(rest_file, o2racc_om_cnt, 'o2racc_ox_cnt', &
                   whead=whead, wdata=wdata)
           end if
@@ -798,49 +870,70 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
 
          if (ocn_present) then
 
-            call seq_io_write(rest_file, mboxid,  'fractions_ox', &
-                  'afrac:ifrac:ofrac:ifrad:ofrad', & ! fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
-                  whead=whead, wdata=wdata)
+            do kinst = 1,num_inst_frc
+               call seq_io_write(rest_file, mboxid,  'fractions_ox', &
+                     'afrac:ifrac:ofrac:ifrad:ofrad', & ! fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
+                     whead=whead, wdata=wdata, inst=kinst)
+            enddo
 
-            call seq_io_write(rest_file, mboxid,  'o2x_ox', &
-                  trim(seq_flds_o2x_fields), &
-                  whead=whead, wdata=wdata)
+            do kinst = 1,num_inst_ocn
+               call seq_io_write(rest_file, mboxid,  'o2x_ox', &
+                     trim(seq_flds_o2x_fields), &
+                     whead=whead, wdata=wdata, inst=kinst)
+            enddo
             tagname = trim(seq_flds_x2o_fields)
             x2oacc_om_cnt => prep_ocn_get_x2oacc_om_cnt()
             p_x2oacc_om => prep_ocn_get_x2oacc_om()
 
-            call seq_io_write(rest_file, mboxid, 'x2oacc_ox', &
-                  trim(tagname), &
-                  whead=whead, wdata=wdata, matrix=p_x2oacc_om)
+            do kinst = 1,num_inst_ocn
+               p_x2oacc_om => prep_ocn_get_x2oacc_om(kinst)
+               call seq_io_write(rest_file, mboxid, 'x2oacc_ox', &
+                     trim(tagname), &
+                     whead=whead, wdata=wdata, matrix=p_x2oacc_om, inst=kinst)
+            enddo
             call seq_io_write(rest_file, x2oacc_om_cnt, 'x2oacc_ox_cnt', &
                whead=whead, wdata=wdata)
-               call seq_io_write(rest_file, mbofxid, 'xao_ox', &
-                  trim(seq_flds_xao_fields), &
-                  whead=whead, wdata=wdata)
+               do kinst = 1,num_inst_xao
+                  call seq_io_write(rest_file, mbofxid, 'xao_ox', &
+                     trim(seq_flds_xao_fields), &
+                     whead=whead, wdata=wdata, inst=kinst)
+               enddo
          endif
          if (ice_present) then
-            call seq_io_write(rest_file, mbixid, 'fractions_ix', &
-               'afrac:ifrac:ofrac', & ! fraclist_i = 'afrac:ifrac:ofrac'
-               whead=whead, wdata=wdata)
-            call seq_io_write(rest_file, mbixid, 'i2x_ix', &
-               trim(seq_flds_i2x_fields), &
-               whead=whead, wdata=wdata)
+            do kinst = 1,num_inst_frc
+               call seq_io_write(rest_file, mbixid, 'fractions_ix', &
+                  'afrac:ifrac:ofrac', & ! fraclist_i = 'afrac:ifrac:ofrac'
+                  whead=whead, wdata=wdata, inst=kinst)
+            enddo
+            do kinst = 1,num_inst_ice
+               call seq_io_write(rest_file, mbixid, 'i2x_ix', &
+                  trim(seq_flds_i2x_fields), &
+                  whead=whead, wdata=wdata, inst=kinst)
+            enddo
          endif
          if (rof_present) then
-            call seq_io_write(rest_file, mbrxid, 'fractions_rx', &
-               'lfrac:lfrin:rfrac', & ! fraclist_r = 'lfrac:lfrin:rfrac'
-               whead=whead, wdata=wdata)
-            call seq_io_write(rest_file, mbrxid, 'r2x_rx', &
-               trim(seq_flds_r2x_fields), &
-               whead=whead, wdata=wdata)
+            do kinst = 1,num_inst_frc
+               call seq_io_write(rest_file, mbrxid, 'fractions_rx', &
+                  'lfrac:lfrin:rfrac', & ! fraclist_r = 'lfrac:lfrin:rfrac'
+                  whead=whead, wdata=wdata, inst=kinst)
+            enddo
+            do kinst = 1,num_inst_rof
+               call seq_io_write(rest_file, mbrxid, 'r2x_rx', &
+                  trim(seq_flds_r2x_fields), &
+                  whead=whead, wdata=wdata, inst=kinst)
+            enddo
          endif
          if (glc_present) then
-            call seq_io_write(rest_file, mbgxid, 'fractions_gx', &
-               'gfrac:lfrac', & ! fraclist_g = 'gfrac:lfrac'
-               whead=whead, wdata=wdata)
-            call seq_io_write(rest_file, mbgxid, 'g2x_gx', &
-               trim(seq_flds_g2x_fields), &
-               whead=whead, wdata=wdata)
+            do kinst = 1,num_inst_frc
+               call seq_io_write(rest_file, mbgxid, 'fractions_gx', &
+                  'gfrac:lfrac', & ! fraclist_g = 'gfrac:lfrac'
+                  whead=whead, wdata=wdata, inst=kinst)
+            enddo
+            do kinst = 1,num_inst_glc
+               call seq_io_write(rest_file, mbgxid, 'g2x_gx', &
+                  trim(seq_flds_g2x_fields), &
+                  whead=whead, wdata=wdata, inst=kinst)
+            enddo
          endif
 ! MOABTODO
 !           if (wav_present) then

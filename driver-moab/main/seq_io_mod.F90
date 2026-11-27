@@ -26,6 +26,7 @@
 
 module seq_io_mod
 
+  use seq_comm_mct, only: seq_comm_mbinst_tags, seq_comm_mbinst_suffix
   ! !USES:
 
   use shr_kind_mod, only: r4 => shr_kind_r4, r8 => shr_kind_r8, in => shr_kind_in
@@ -913,7 +914,7 @@ contains
   !    2025-09-24   allow vertex type for entity, for spectral case for atmosphere
   !
   ! !INTERFACE: ------------------------------------------------------------------
-  subroutine seq_io_write_moab_tags(filename, mbxid, dname, tag_list, whead,wdata, matrix, nx, ny, nt, file_ind, dims2din, dims2do, mask, use_float )
+  subroutine seq_io_write_moab_tags(filename, mbxid, dname, tag_list, whead,wdata, matrix, nx, ny, nt, file_ind, dims2din, dims2do, mask, use_float, inst )
 
     use shr_kind_mod,     only: CX => shr_kind_CX, CXX => shr_kind_CXX
     use shr_kind_mod,     only: r4 => shr_kind_r4
@@ -938,6 +939,9 @@ contains
     integer,optional,intent(out):: dims2do(2)    ! dim ids for output
     real(r8)         ,optional,intent(in) :: mask(:)
     logical          ,optional,intent(in) :: use_float  ! if true, write single precision
+    ! MOAB instance: variables are named dname//'_000k'//'_'//field and are
+    ! read from the instance tags field//'_000k' (default 1, no suffix)
+    integer          ,optional,intent(in) :: inst
 
     logical :: lwhead, lwdata, luse_float
     character(*),parameter :: subName = '(seq_io_write_moab_tags) '
@@ -1000,6 +1004,8 @@ contains
     endif
 
     lpre = trim(dname)
+
+    if (present(inst)) lpre = trim(lpre)//trim(seq_comm_mbinst_suffix(inst))
     ! find out the number of global cells, needed for defining the variables length
     ierr = iMOAB_GetGlobalInfo( mbxid, ngv, ng)
     lny = 1
@@ -1125,6 +1131,7 @@ contains
                enddo
              else
                tagname = trim(field)
+               if (present(inst)) tagname = seq_comm_mbinst_tags(trim(field), inst)
                if (ns > 0 ) then
                   ierr = iMOAB_GetDoubleTagStorage (mbxid, trim(tagname)//C_NULL_CHAR, ns, ent_type, data1)
                   if (ierr .ne. 0) then
@@ -1484,7 +1491,7 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_io_read_moab_tags(filename, mbxid, dname, tag_list, matrix, nx)
+  subroutine seq_io_read_moab_tags(filename, mbxid, dname, tag_list, matrix, nx, inst)
 
     use shr_kind_mod,     only: CX => shr_kind_CX, CXX => shr_kind_CXX
     use iMOAB,            only: iMOAB_GetGlobalInfo, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, &
@@ -1529,10 +1536,12 @@ contains
     character(CXX) ::tagname, field
 
     integer(in)              :: ngv, ent_type, ierr
+    integer, optional, intent(in) :: inst  ! MOAB instance (see seq_io_write_moab_tags)
     character(*),parameter :: subName = '(seq_io_read_moab_tags) '
 
 
     lpre = trim(dname)
+    if (present(inst)) lpre = trim(lpre)//trim(seq_comm_mbinst_suffix(inst))
 
     call seq_comm_setptrs(CPLID,iam=iam,mpicom=mpicom)
 
@@ -1642,6 +1651,7 @@ contains
             enddo
           else
              tagname = trim(field)
+             if (present(inst)) tagname = seq_comm_mbinst_tags(trim(field), inst)
              if (ns > 0) then
                 ierr = iMOAB_SetDoubleTagStorage (mbxid, trim(tagname)//C_NULL_CHAR, ns , ent_type, data_reorder)
                if (ierr .ne. 0) then
@@ -1671,6 +1681,7 @@ contains
             enddo
           else
              tagname = trim(field)
+             if (present(inst)) tagname = seq_comm_mbinst_tags(trim(field), inst)
              if ( ns > 0 ) then
                 ierr = iMOAB_SetDoubleTagStorage (mbxid, trim(tagname)//C_NULL_CHAR, ns , ent_type, data_reorder)
                if (ierr .ne. 0) then
