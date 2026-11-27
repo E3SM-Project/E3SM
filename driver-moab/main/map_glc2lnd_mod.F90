@@ -11,7 +11,7 @@ module map_glc2lnd_mod
   ! https://docs.google.com/document/d/1sjsaiPYsPJ9A7dVGJIHGg4rVIY2qF5aRXbNzSXVAafU/edit?usp=sharing
 
 #include "shr_assert.h"
-  use seq_comm_mct, only : logunit
+  use seq_comm_mct, only : logunit, seq_comm_mbinst_tags
   use shr_kind_mod, only : r8 => shr_kind_r8
   use shr_kind_mod, only : cxx => SHR_KIND_CXX
   use glc_elevclass_mod, only : glc_get_num_elevation_classes, glc_get_elevation_class, &
@@ -51,7 +51,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine map_glc2lnd_ec(mapper, &
-       frac_field, topo_field, icemask_field, extra_fields, frac_l_out)
+       frac_field, topo_field, icemask_field, extra_fields, frac_l_out, inst_s, inst_d)
     !
     ! !DESCRIPTION:
     ! Maps fields from the GLC mesh (mapper%src_mbid)
@@ -86,6 +86,8 @@ contains
     character(len=*), intent(in) :: icemask_field ! name of glc field containing ice mask
     character(len=*), intent(in) :: extra_fields  ! colon-delimited additional fields ('' or ' ' for none)
     real(r8), optional, intent(out) :: frac_l_out(:,0:) ! normalized per-EC fractions on the land mesh
+    integer , optional, intent(in)  :: inst_s  ! MOAB instance of the glc data (default 1)
+    integer , optional, intent(in)  :: inst_d  ! MOAB instance of the lnd data (default 1)
     !
     ! !LOCAL VARIABLES:
     integer :: lsize_g, lsize_l
@@ -115,10 +117,15 @@ contains
     ! dummy zero-size attribute vectors to satisfy the seq_map_map interface
     type(mct_aVect) :: av_dum_s, av_dum_d
 
+    integer :: lis, lid  ! source and target instance
     character(len=*), parameter :: subname = 'map_glc2lnd_ec'
     !-----------------------------------------------------------------------
 
     if (mapper%src_mbid < 0 .or. mapper%tgt_mbid < 0) return
+    lis = 1
+    if (present(inst_s)) lis = inst_s
+    lid = 1
+    if (present(inst_d)) lid = inst_d
 
     ent_type = 1 ! cells on both meshes
 
@@ -151,19 +158,19 @@ contains
 
     allocate(glc_frac(lsize_g), glc_topo(lsize_g), glc_icemask(lsize_g))
     allocate(frac_this_ec(lsize_g), glc_elevclass(lsize_g))
-    tagname = trim(frac_field)//C_NULL_CHAR
+    tagname = seq_comm_mbinst_tags(trim(frac_field)//C_NULL_CHAR, lis)
     ierr = iMOAB_GetDoubleTagStorage(mapper%src_mbid, tagname, lsize_g, ent_type, glc_frac)
     if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR getting '//trim(frac_field))
-    tagname = trim(topo_field)//C_NULL_CHAR
+    tagname = seq_comm_mbinst_tags(trim(topo_field)//C_NULL_CHAR, lis)
     ierr = iMOAB_GetDoubleTagStorage(mapper%src_mbid, tagname, lsize_g, ent_type, glc_topo)
     if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR getting '//trim(topo_field))
-    tagname = trim(icemask_field)//C_NULL_CHAR
+    tagname = seq_comm_mbinst_tags(trim(icemask_field)//C_NULL_CHAR, lis)
     ierr = iMOAB_GetDoubleTagStorage(mapper%src_mbid, tagname, lsize_g, ent_type, glc_icemask)
     if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR getting '//trim(icemask_field))
     if (nextra > 0) then
        allocate(glc_extra(lsize_g, nextra))
        do i = 1, nextra
-          tagname = trim(extra_names(i))//C_NULL_CHAR
+          tagname = seq_comm_mbinst_tags(trim(extra_names(i))//C_NULL_CHAR, lis)
           ierr = iMOAB_GetDoubleTagStorage(mapper%src_mbid, tagname, lsize_g, ent_type, glc_extra(:,i))
           if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR getting '//trim(extra_names(i)))
        end do
@@ -213,7 +220,7 @@ contains
 
     ! set the numerators on the glc mesh tags
     arrsize = nnum * lsize_g
-    tagname = trim(numlist)//C_NULL_CHAR
+    tagname = seq_comm_mbinst_tags(trim(numlist)//C_NULL_CHAR, lis)
     ierr = iMOAB_SetDoubleTagStorage(mapper%src_mbid, tagname, arrsize, ent_type, num_g)
     if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR setting numerator tags on glc mesh')
 
@@ -223,7 +230,8 @@ contains
 
     call mct_aVect_init(av_dum_s, rList = frac_field, lsize = 0)
     call mct_aVect_init(av_dum_d, rList = frac_field, lsize = 0)
-    call seq_map_map(mapper, av_dum_s, av_dum_d, fldlist=trim(numlist), norm=.false.)
+    call seq_map_map(mapper, av_dum_s, av_dum_d, fldlist=trim(numlist), norm=.false., &
+         inst_s=lis, inst_d=lid)
     call mct_aVect_clean(av_dum_s)
     call mct_aVect_clean(av_dum_d)
 
@@ -235,6 +243,7 @@ contains
     allocate(out_l(lsize_l, nnum-1))
     num_l = 0.0_r8
     arrsize = nnum * lsize_l
+    tagname = seq_comm_mbinst_tags(trim(numlist)//C_NULL_CHAR, lid)
     ierr = iMOAB_GetDoubleTagStorage(mapper%tgt_mbid, tagname, arrsize, ent_type, num_l)
     if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR getting numerator tags on lnd mesh')
 
@@ -277,7 +286,7 @@ contains
     ! ------------------------------------------------------------------------
 
     i = len_trim(numlist) - len(scratch_icemask_num) - 1 ! strip ':Sg_icemsk_num'
-    tagname = numlist(1:i)//C_NULL_CHAR
+    tagname = seq_comm_mbinst_tags(numlist(1:i)//C_NULL_CHAR, lid)
     arrsize = (nnum-1) * lsize_l
     ierr = iMOAB_SetDoubleTagStorage(mapper%tgt_mbid, tagname, arrsize, ent_type, out_l)
     if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR setting per-EC tags on lnd mesh')
@@ -316,7 +325,7 @@ contains
     ! through the same mapping).
     !
     ! !USES:
-    use iMOAB, only : iMOAB_DefineTagStorage
+    use cplcomp_moab_helpers_mod, only : moab_define_tags
     use iso_c_binding, only : C_NULL_CHAR
     use seq_flds_mod, only : seq_flds_x2l_fields_from_glc
     !
@@ -337,17 +346,17 @@ contains
     numco = 1
 
     tagname = trim(seq_flds_x2l_fields_from_glc)//C_NULL_CHAR
-    ierr = iMOAB_DefineTagStorage(glc_mbid, tagname, tagtype, numco, tagindex)
+    ierr = moab_define_tags(glc_mbid, tagname, tagtype, numco, tagindex)
     if (ierr .ne. 0) then
        call shr_sys_abort(subname//' ERROR defining glc per-EC staging tags on the glc mesh')
     endif
 
     tagname = scratch_icemask_num//C_NULL_CHAR
-    ierr = iMOAB_DefineTagStorage(glc_mbid, tagname, tagtype, numco, tagindex)
+    ierr = moab_define_tags(glc_mbid, tagname, tagtype, numco, tagindex)
     if (ierr .ne. 0) then
        call shr_sys_abort(subname//' ERROR defining '//scratch_icemask_num//' on the glc mesh')
     endif
-    ierr = iMOAB_DefineTagStorage(lnd_mbid, tagname, tagtype, numco, tagindex)
+    ierr = moab_define_tags(lnd_mbid, tagname, tagtype, numco, tagindex)
     if (ierr .ne. 0) then
        call shr_sys_abort(subname//' ERROR defining '//scratch_icemask_num//' on the land mesh')
     endif

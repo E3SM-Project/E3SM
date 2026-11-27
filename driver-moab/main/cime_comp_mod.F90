@@ -5397,8 +5397,8 @@ contains
              call t_startf('CPL:seq_hist_writeaux-l2x1yrg')
              ! the averaged data lives in the prep_glc accumulator array, not in the
              ! (instantaneous) l2x tags; the attribute vector supplies the field list
-             p_l2gacc_lm => prep_glc_get_l2gacc_lm()
              do eli = 1,num_inst_lnd
+                p_l2gacc_lm => prep_glc_get_l2gacc_lm(eli)
                 inst_suffix = component_get_suffix(lnd(eli))
                 ! Use yr_offset=-1 so the file with fields from year 1 has time stamp
                 ! 0001-01-01 rather than 0002-01-01, etc.

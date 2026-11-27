@@ -1010,7 +1010,8 @@ contains
             frac_field = glc_frac_field, &
             topo_field = glc_topo_field, &
             icemask_field = glc_icemask_field, &
-            extra_fields = glc2lnd_ec_extra_fields)
+            extra_fields = glc2lnd_ec_extra_fields, &
+            inst_s=egi, inst_d=egi)
     enddo
     call t_drvstopf  (trim(timer))
 

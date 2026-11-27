@@ -346,7 +346,6 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
        if (lnd_present .and. glc_prognostic) then
              tagname = prep_glc_get_sharedFieldsLndGlc()
              l2gacc_lm_cnt => prep_glc_get_l2gacc_lm_cnt()
-             p_l2gacc_lm => prep_glc_get_l2gacc_lm()
              if(samegrid_al) then
                 ! land is on the atm mesh; max global land id comes from atm.
                 ierr = iMOAB_GetGlobalInfo(mbaxid, ngv, nge)
@@ -355,20 +354,29 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
                 else
                    nx_lnd = ngv ! atm mesh is a point cloud
                 endif
-                call seq_io_read(moab_rest_file, mblxid, 'l2gacc_lx', &
-                 trim(tagname), &
-                 matrix = p_l2gacc_lm, nx=nx_lnd)
+                do kinst = 1,num_inst_lnd
+                   p_l2gacc_lm => prep_glc_get_l2gacc_lm(kinst)
+                   call seq_io_read(moab_rest_file, mblxid, 'l2gacc_lx', &
+                    trim(tagname), &
+                    matrix = p_l2gacc_lm, nx=nx_lnd, inst=kinst)
+                enddo
              else if(samegrid_lr) then
                ! land is on the rof mesh; max global land id comes from rof.
                ierr = iMOAB_GetGlobalInfo(mbrxid, ngv, nge)
                nx_lnd = nge
-               call seq_io_read(moab_rest_file, mblxid, 'l2gacc_lx', &
-                trim(tagname), &
-                matrix = p_l2gacc_lm, nx=nx_lnd)
+               do kinst = 1,num_inst_lnd
+                  p_l2gacc_lm => prep_glc_get_l2gacc_lm(kinst)
+                  call seq_io_read(moab_rest_file, mblxid, 'l2gacc_lx', &
+                   trim(tagname), &
+                   matrix = p_l2gacc_lm, nx=nx_lnd, inst=kinst)
+               enddo
              else
-                call seq_io_read(moab_rest_file, mblxid, 'l2gacc_lx', &
-                 trim(tagname), &
-                 matrix = p_l2gacc_lm )
+                do kinst = 1,num_inst_lnd
+                   p_l2gacc_lm => prep_glc_get_l2gacc_lm(kinst)
+                   call seq_io_read(moab_rest_file, mblxid, 'l2gacc_lx', &
+                    trim(tagname), &
+                    matrix = p_l2gacc_lm, inst=kinst)
+                enddo
              endif
              call seq_io_read(rest_file, l2gacc_lm_cnt ,'l2gacc_lx_cnt')
        end if
@@ -829,7 +837,6 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
           if (lnd_present .and. glc_prognostic) then
              tagname = prep_glc_get_sharedFieldsLndGlc()
              l2gacc_lm_cnt => prep_glc_get_l2gacc_lm_cnt()
-             p_l2gacc_lm => prep_glc_get_l2gacc_lm()
              if(samegrid_al) then
                 ! land is on the atm mesh; max global land id comes from atm.
                 ierr = iMOAB_GetGlobalInfo(mbaxid, ngv, nge)
@@ -838,21 +845,30 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
                 else
                    nx_lnd = ngv ! atm mesh is a point cloud
                 endif
-                call seq_io_write(rest_file, mblxid, 'l2gacc_lx', &
-                 trim(tagname), &
-                 whead=whead, wdata=wdata, matrix = p_l2gacc_lm, nx=nx_lnd)
+                do kinst = 1,num_inst_lnd
+                   p_l2gacc_lm => prep_glc_get_l2gacc_lm(kinst)
+                   call seq_io_write(rest_file, mblxid, 'l2gacc_lx', &
+                    trim(tagname), &
+                    whead=whead, wdata=wdata, matrix = p_l2gacc_lm, nx=nx_lnd, inst=kinst)
+                enddo
              else if(samegrid_lr) then
                ! land is on the rof mesh; max global land id comes from rof.
                ierr = iMOAB_GetGlobalInfo(mbrxid, ngv, nge)
                nx_lnd = nge
-               call seq_io_write(rest_file, mblxid, 'l2gacc_lx', &
-                trim(tagname), &
-                whead=whead, wdata=wdata, matrix = p_l2gacc_lm, nx=nx_lnd)
+               do kinst = 1,num_inst_lnd
+                  p_l2gacc_lm => prep_glc_get_l2gacc_lm(kinst)
+                  call seq_io_write(rest_file, mblxid, 'l2gacc_lx', &
+                   trim(tagname), &
+                   whead=whead, wdata=wdata, matrix = p_l2gacc_lm, nx=nx_lnd, inst=kinst)
+               enddo
              else
                 ! land on its own (masked) grid: size PIO global dim from infodata land dims
-                call seq_io_write(rest_file, mblxid, 'l2gacc_lx', &
-                 trim(tagname), &
-                 whead=whead, wdata=wdata, matrix = p_l2gacc_lm, nx=lnd_nx, ny=lnd_ny )
+                do kinst = 1,num_inst_lnd
+                   p_l2gacc_lm => prep_glc_get_l2gacc_lm(kinst)
+                   call seq_io_write(rest_file, mblxid, 'l2gacc_lx', &
+                    trim(tagname), &
+                    whead=whead, wdata=wdata, matrix = p_l2gacc_lm, nx=lnd_nx, ny=lnd_ny, inst=kinst)
+                enddo
              endif
              call seq_io_write(rest_file, l2gacc_lm_cnt, 'l2gacc_lx_cnt', &
                   whead=whead, wdata=wdata)
