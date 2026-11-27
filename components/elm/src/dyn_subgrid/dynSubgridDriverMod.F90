@@ -60,6 +60,7 @@ module dynSubgridDriverMod
   ! !PRIVATE TYPES:
   ! saved weights from before the subgrid weight updates
   type(prior_weights_type) :: prior_weights
+  logical :: issued_zero_iac_warning = .false.
 
   ! object used to update patch-level states after subgrid weight updates
   type(patch_state_updater_type), target :: patch_state_updater
@@ -480,6 +481,7 @@ contains
     integer :: p, c, l, t, g      ! indices for pft, col, lu, topo, gcell
     real(r8), allocatable :: sumwtcol(:), sumwtlunit(:), sumwttopounit(:), &
                              sumwtgcell(:)
+    real(r8), allocatable :: wtcol_before_iac(:)
     character(len=*), parameter :: subname = 'set_iac_veg_weights'
     logical :: weights_equal_1
     real(r8), parameter :: tolerance = 1.e-12_r8  ! tolerance for weight sums
@@ -493,6 +495,9 @@ contains
     sumwttopounit(bounds%begt : bounds%endt) = 0._r8
     allocate(sumwtgcell(bounds%begg:bounds%endg))
     sumwtgcell(bounds%begg : bounds%endg) = 0._r8
+    allocate(wtcol_before_iac(bounds%begp:bounds%endp))
+    wtcol_before_iac(bounds%begp : bounds%endp) = &
+         veg_pp%wtcol(bounds%begp : bounds%endp)
 
     ! First calc the wtcol and sum the values
     ! fill bare pft value if col wtgcell is zero
@@ -502,18 +507,25 @@ contains
        l = veg_pp%landunit(p)
        t = veg_pp%topounit(p)
        g = veg_pp%gridcell(p)
-       if (col_pp%wtgcell(c) .eq. 0._r8) then
-          if (veg_pp%itype(p) .eq. 0) then
-             veg_pp%wtcol(p) = 1._r8
+       ! IAC supplies PFT fractions for the natural-vegetation soil column only.
+       ! Keep the weights produced by compute_higher_order_weights for crop and
+       ! special landunit columns (lake, glacier, wetland, urban, etc.).  Their
+       ! wtgcell_iac values are not updated by iac2lndMod and must not replace
+       ! the normal ELM patch weights.
+       if (col_pp%is_soil(c)) then
+          if (col_pp%wtgcell(c) .eq. 0._r8) then
+             if (veg_pp%itype(p) .eq. 0) then
+                veg_pp%wtcol(p) = 1._r8
+             else
+                veg_pp%wtcol(p) = 0._r8
+             end if
           else
-             veg_pp%wtcol(p) = 0._r8
+             veg_pp%wtcol(p) = veg_pp%wtgcell_iac(p) / col_pp%wtgcell(c)
           end if
-       else
-          veg_pp%wtcol(p) = veg_pp%wtgcell_iac(p) / col_pp%wtgcell(c)
+          veg_pp%wtlunit(p)    = veg_pp%wtcol(p) * col_pp%wtlunit(c)
+          veg_pp%wttopounit(p) = veg_pp%wtcol(p) * col_pp%wttopounit(c)
+          veg_pp%wtgcell(p)    = veg_pp%wtcol(p) * col_pp%wtgcell(c)
        end if
-       veg_pp%wtlunit(p)    = veg_pp%wtcol(p) * col_pp%wtlunit(c)
-       veg_pp%wttopounit(p) = veg_pp%wtcol(p) * col_pp%wttopounit(c)
-       veg_pp%wtgcell(p)    = veg_pp%wtcol(p) * col_pp%wtgcell(c)
        ! get the sums for normalizing below
        sumwtcol(c) = sumwtcol(c) + veg_pp%wtcol(p)
     end do
@@ -521,13 +533,16 @@ contains
     ! Normalize the wtcol if necessary and recalc higher order weights
     do c = bounds%begc,bounds%endc
        weights_equal_1 = (abs(sumwtcol(c) - 1._r8) <= tolerance)
-       if (.not.weights_equal_1) then
+       if (.not.weights_equal_1 .and. col_pp%is_soil(c)) then
+          if (abs(sumwtcol(c)) <= tolerance .and. .not. issued_zero_iac_warning) then
+             write(iulog,*) subname//': zero IAC PFT sum detected; retaining pre-IAC weights', &
+                  ' (first local soil column): ', c
+             issued_zero_iac_warning = .true.
+          end if
           do p = bounds%begp, bounds%endp
              if (veg_pp%column(p) .eq. c) then
-                if (sumwtcol(c) .eq. 0._r8) then
-                   write(iulog,*) subname//'setting wtcol to zero'// &
-                                  'for p, c, l, g ', p,c,l,g
-                   veg_pp%wtcol(p) = 0._r8
+                if (abs(sumwtcol(c)) <= tolerance) then
+                   veg_pp%wtcol(p) = wtcol_before_iac(p)
                 else
                    veg_pp%wtcol(p) = veg_pp%wtcol(p) / sumwtcol(c)
                 end if
@@ -549,6 +564,7 @@ contains
     deallocate(sumwtlunit)
     deallocate(sumwttopounit)
     deallocate(sumwtgcell)
+    deallocate(wtcol_before_iac)
 
   endsubroutine set_iac_veg_weights
 

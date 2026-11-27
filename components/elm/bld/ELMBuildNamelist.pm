@@ -2816,8 +2816,10 @@ sub setup_logic_do_transient_crops {
   if (string_is_undef_or_empty($nl->get_value('flanduse_timeseries'))) {
     $cannot_be_true = "$var can only be set to true when running a transient case (flanduse_timeseries non-blank)";
   }
-  elsif (!value_is_true($nl_flags->{'use_crop'})) {
-    $cannot_be_true = "$var can only be set to true when running with active crops (use_crop = .true.)";
+  # REV-3 ladder (TZ 2026-10-27): generic CFTs on a crop landunit (create_crop_landunit) are enough,
+  # as in the E3SM v3 water-management runs; dyncropFileMod needs use_crop only for fertilizer.
+  elsif (!value_is_true($nl_flags->{'use_crop'}) && !value_is_true($nl->get_value('create_crop_landunit'))) {
+    $cannot_be_true = "$var can only be set to true with active crops (use_crop) or a crop landunit (create_crop_landunit)";
   }
   elsif (value_is_true($nl->get_value('use_fates'))) {
     # In principle, use_fates should be compatible with

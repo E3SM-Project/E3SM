@@ -271,7 +271,7 @@ contains
        end if
 
        ! needed for domain checking
-       if (iac_c2_atm) then
+       if (iac_present) then
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Fz2a'
