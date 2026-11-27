@@ -1,5 +1,7 @@
 module prep_ice_mod
 
+  use seq_comm_mct, only: seq_comm_mbinst_tags
+  use cplcomp_moab_helpers_mod, only: moab_define_tags
   use shr_kind_mod    , only: r8 => SHR_KIND_R8
   use shr_kind_mod    , only: cs => SHR_KIND_CS
   use shr_kind_mod    , only: cl => SHR_KIND_CL
@@ -245,7 +247,7 @@ contains
             tagtype = 1  ! dense, double
             numco = 1 !  one value per cell / entity
             tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
-            ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
+            ierr = moab_define_tags(mbixid, tagname, tagtype, numco,  tagindex )
             if ( ierr == 1 ) then
                call shr_sys_abort( subname//' ERROR: cannot define tags for ice proj to ocn' )
             end if
@@ -423,6 +425,7 @@ contains
 
 
     character(*), parameter   :: subname = '(prep_ice_mrg_moab) '
+    integer :: eii, eai, eoi, eri  ! instance indices
     !-----------------------------------------------------------------------
     call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
     call seq_infodata_GetData(infodata, &
@@ -559,11 +562,18 @@ contains
     !call mct_aVect_copy(aVin=a2x_i, aVout=x2i_i, vector=mct_usevector, sharedIndices=a2x_SharedIndices)
     !call mct_aVect_copy(aVin=g2x_i, aVout=x2i_i, vector=mct_usevector, sharedIndices=g2x_SharedIndices)
 
+    ! one merge per sea-ice instance, with the instances of the other
+    ! components paired as in the MCT driver (prep_ice_mrg)
+    do eii = 1,num_inst_ice
+       eai = mod((eii-1),num_inst_atm) + 1
+       eoi = mod((eii-1),num_inst_ocn) + 1
+       eri = mod((eii-1),num_inst_rof) + 1
+
     ! get data that needs custom merges
     ent_type = mbGetEntityType(mbixid)
 
    ! git the x2i_im field which has been mostly filled out by mapping calls.
-    tagname = trim(seq_flds_x2i_fields)//C_NULL_CHAR
+    tagname = seq_comm_mbinst_tags(trim(seq_flds_x2i_fields)//C_NULL_CHAR, eii)
     arrsize = niflds * lsize
     ierr = iMOAB_GetDoubleTagStorage ( mbixid, tagname, arrsize , ent_type, x2i_im)
     if (ierr .ne. 0) then
@@ -571,7 +581,7 @@ contains
     endif
 
 ! get the a2x data that was mapped to i
-    tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+    tagname = seq_comm_mbinst_tags(trim(seq_flds_a2x_fields)//C_NULL_CHAR, eai)
     arrsize = naflds * lsize !        allocate (a2x_om (lsize, naflds))
     ierr = iMOAB_GetDoubleTagStorage ( mbixid, tagname, arrsize , ent_type, a2x_im)
     if (ierr .ne. 0) then
@@ -580,7 +590,7 @@ contains
     endif
 
 ! get the r2x data that was mapped to i
-    tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
+    tagname = seq_comm_mbinst_tags(trim(seq_flds_r2x_fields)//C_NULL_CHAR, eri)
     arrsize = nrflds * lsize !        allocate (a2x_om (lsize, naflds))
     ierr = iMOAB_GetDoubleTagStorage ( mbixid, tagname, arrsize , ent_type, r2x_im)
     if (ierr .ne. 0) then
@@ -638,12 +648,14 @@ contains
        end if
 
     end do
-    tagname = trim(seq_flds_x2i_fields)//C_NULL_CHAR
+    tagname = seq_comm_mbinst_tags(trim(seq_flds_x2i_fields)//C_NULL_CHAR, eii)
     arrsize = niflds * lsize
     ierr = iMOAB_SetDoubleTagStorage ( mbixid, tagname, arrsize , ent_type, x2i_im)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in setting x2i_im array ')
     endif
+
+    enddo ! eii
 
     if (first_time) then
        if (iamroot) then
@@ -688,7 +700,8 @@ contains
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eai = 1,num_inst_atm
-       call seq_map_map(mapper_SFo2i, a2x_ox(eai), a2x_ix(eai), norm=.true.)
+       call seq_map_map(mapper_SFo2i, a2x_ox(eai), a2x_ix(eai), norm=.true., &
+            inst_s=eai, inst_d=eai)
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -714,7 +727,8 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eoi = 1,num_inst_ocn
        o2x_ox => component_get_c2x_cx(ocn(eoi))
-       call seq_map_map(mapper_SFo2i, o2x_ox, o2x_ix(eoi), norm=.true.)
+       call seq_map_map(mapper_SFo2i, o2x_ox, o2x_ix(eoi), norm=.true., &
+            inst_s=eoi, inst_d=eoi)
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -741,7 +755,8 @@ contains
        r2x_rx => component_get_c2x_cx(rof(eri))
 
        call seq_map_map(mapper_Rr2i, r2x_rx, r2x_ix(eri), &
-            fldlist='Firr_rofi', norm=.false.)
+            fldlist='Firr_rofi', norm=.false., &
+                 inst_s=eri, inst_d=eri)
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -767,7 +782,8 @@ contains
     do egi = 1,num_inst_glc
        g2x_gx => component_get_c2x_cx(glc(egi))
        call seq_map_map(mapper_Rg2i, g2x_gx, g2x_ix(egi), &
-                        fldlist='Fixx_rofi', norm=.true.)
+                        fldlist='Fixx_rofi', norm=.true., &
+                             inst_s=egi, inst_d=egi)
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -793,7 +809,8 @@ contains
     do egi = 1,num_inst_rof
        g2x_gx => component_get_c2x_cx(glc(egi))
        call seq_map_map(mapper_Sg2i, g2x_gx, g2x_ix(egi), &
-                        fldlist='Sg_icemask_coupled_fluxes', norm=.true.)
+                        fldlist='Sg_icemask_coupled_fluxes', norm=.true., &
+                             inst_s=egi, inst_d=egi)
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -818,7 +835,8 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do ewi = 1,num_inst_wav
        w2x_wx => component_get_c2x_cx(wav(ewi))
-       call seq_map_map(mapper_Sw2i, w2x_wx, w2x_ix(ewi), fldlist=seq_flds_w2x_states, norm=.true.)
+       call seq_map_map(mapper_Sw2i, w2x_wx, w2x_ix(ewi), fldlist=seq_flds_w2x_states, norm=.true., &
+            inst_s=ewi, inst_d=ewi)
     enddo
     call t_drvstopf  (trim(timer))
 

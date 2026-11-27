@@ -1,5 +1,7 @@
 module prep_aoflux_mod
 
+  use cplcomp_moab_helpers_mod, only: moab_set_tags_all_inst
+  use cplcomp_moab_helpers_mod, only: moab_define_tags
   use shr_kind_mod,     only: r8 => SHR_KIND_R8
   use shr_kind_mod,     only: cs => SHR_KIND_CS
   use shr_kind_mod,     only: cl => SHR_KIND_CL
@@ -146,7 +148,7 @@ contains
        tagname = trim(seq_flds_xao_fields)//":norm8wt"//C_NULL_CHAR
        tagtype = 1 ! dense, double
        numco = 1
-       ierr = iMOAB_DefineTagStorage(mbofxid, tagname, tagtype, numco, tagindex )
+       ierr = moab_define_tags(mbofxid, tagname, tagtype, numco, tagindex )
        if (ierr .ne. 0) then
           write(logunit,*) subname,' error in defining tags on ocn phys mesh on cpl '
           call shr_sys_abort(subname//' ERROR in defining tags on ocn phys mesh on cpl')
@@ -164,7 +166,7 @@ contains
        allocate(tagValues(arrSize) )
        ent_type = mbGetEntityType(mbofxid)
        tagValues = 0._r8
-       ierr = iMOAB_SetDoubleTagStorage ( mbofxid, tagname, arrSize , ent_type, tagValues)
+       ierr = moab_set_tags_all_inst (mbofxid, tagname, arrSize , ent_type, tagValues)
        deallocate(tagValues)
        if (ierr .ne. 0) then
          write(logunit,*) subname,' error in zeroing out xao_fields  '
@@ -191,7 +193,7 @@ contains
        tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
        tagtype = 1 ! dense, double
        numco = 1
-       ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco, tagindex )
+       ierr = moab_define_tags(mbaxid, tagname, tagtype, numco, tagindex )
        if (ierr .ne. 0) then
           write(logunit,*) subname,' error in defining tags on atm phys mesh on cpl '
           call shr_sys_abort(subname//' ERROR in defining tags on atm phys mesh on cpl')
@@ -214,7 +216,7 @@ contains
        allocate(tagValues(arrSize) )
        
        tagValues = 0._r8
-       ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagname, arrSize , ent_type, tagValues)
+       ierr = moab_set_tags_all_inst (mbaxid, tagname, arrSize , ent_type, tagValues)
        deallocate(tagValues)
        if (ierr .ne. 0) then
          write(logunit,*) subname,' error in zeroing out xao_fields  '
@@ -268,7 +270,8 @@ contains
           mapper_Sof2a => prep_atm_get_mapper_Sof2a()
           call seq_map_map(mapper_Sof2a, xao_ox(exi), xao_ax(exi), &
                fldlist=seq_flds_xao_albedo, norm=.true., &
-               avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
+               avwts_s=fractions_ox(efi),avwtsfld_s='ofrac', &
+                    inst_s=exi, inst_d=exi, inst_w=efi)
        enddo
     end if
 
@@ -279,12 +282,14 @@ contains
           mapper_Sof2a => prep_atm_get_mapper_Sof2a()
           call seq_map_map(mapper_Sof2a, xao_ox(exi), xao_ax(exi), &
                fldlist=seq_flds_xao_states, norm=.true., &
-               avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
+               avwts_s=fractions_ox(efi),avwtsfld_s='ofrac', &
+                    inst_s=exi, inst_d=exi, inst_w=efi)
 
           mapper_Fof2a => prep_atm_get_mapper_Fof2a()
           call seq_map_map(mapper_Fof2a, xao_ox(exi), xao_ax(exi),&
                fldlist=seq_flds_xao_fluxes, norm=.true., &
-               avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
+               avwts_s=fractions_ox(efi),avwtsfld_s='ofrac', &
+                    inst_s=exi, inst_d=exi, inst_w=efi)
        enddo
     end if
 #ifdef MOABDEBUG
@@ -345,7 +350,8 @@ contains
        !       end if
 
        mapper_Fa2o => prep_ocn_get_mapper_Fa2o()
-       call seq_map_map(mapper_Fa2o, xao_ax(exi), xao_ox(exi), norm=.true.)
+       call seq_map_map(mapper_Fa2o, xao_ax(exi), xao_ox(exi), norm=.true., &
+            inst_s=exi, inst_d=exi)
     enddo
     call t_drvstopf  (trim(timer))
 

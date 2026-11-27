@@ -1,5 +1,6 @@
 module seq_flux_mct
 
+  use seq_comm_mct, only: seq_comm_mbinst_tags
   use shr_kind_mod,      only: r8 => shr_kind_r8, in=>shr_kind_in
   use shr_sys_mod,       only: shr_sys_abort
   use shr_flux_mod,      only: shr_flux_atmocn, shr_flux_atmocn_ua, shr_flux_atmocn_diurnal, shr_flux_adjust_constants
@@ -853,7 +854,7 @@ contains
 
   !===============================================================================
 
-  subroutine seq_flux_ocnalb( infodata, ocn, a2x_o, fractions_o, xao_o )
+  subroutine seq_flux_ocnalb( infodata, ocn, a2x_o, fractions_o, xao_o, inst_a, inst_f, inst_x )
 
     use shr_moab_mod,     only: mbGetnCells, mbGetEntityType, mbGetCellTagVals, mbSetCellTagVals
     !-----------------------------------------------------------------------
@@ -865,6 +866,9 @@ contains
     type(mct_aVect)         , intent(in)    :: a2x_o
     type(mct_aVect)         , intent(inout) :: fractions_o
     type(mct_aVect)         , intent(inout) :: xao_o
+    ! MOAB instances of a2x_o, fractions_o and xao_o (default 1, see seq_comm_mbinst_tags)
+    integer, optional       , intent(in)    :: inst_a, inst_f, inst_x
+    integer :: lia, lif, lix
     !
     ! Local variables
     !
@@ -908,6 +912,13 @@ contains
     character(*),parameter :: subName =   '(seq_flux_ocnalb) '
     !
     !-----------------------------------------------------------------------
+
+    lia = 1
+    if (present(inst_a)) lia = inst_a
+    lif = 1
+    if (present(inst_f)) lif = inst_f
+    lix = 1
+    if (present(inst_x)) lix = inst_x
 
     dom_o => component_get_dom_cx(ocn) ! dom_ox
 
@@ -1024,10 +1035,10 @@ contains
        !avsdf = anidr
 
        if (mbofxid .ge. 0) then
-          call mbSetCellTagVals(mbofxid, 'So_avsdr', avsdr, nloc_of)
-          call mbSetCellTagVals(mbofxid, 'So_anidr', anidr, nloc_of)
-          call mbSetCellTagVals(mbofxid, 'So_avsdf', avsdf, nloc_of)
-          call mbSetCellTagVals(mbofxid, 'So_anidf', anidf, nloc_of)
+          call mbSetCellTagVals(mbofxid, trim(seq_comm_mbinst_tags('So_avsdr', lix)), avsdr, nloc_of)
+          call mbSetCellTagVals(mbofxid, trim(seq_comm_mbinst_tags('So_anidr', lix)), anidr, nloc_of)
+          call mbSetCellTagVals(mbofxid, trim(seq_comm_mbinst_tags('So_avsdf', lix)), avsdf, nloc_of)
+          call mbSetCellTagVals(mbofxid, trim(seq_comm_mbinst_tags('So_anidf', lix)), anidf, nloc_of)
        endif
 
        update_alb = .true.
@@ -1041,15 +1052,15 @@ contains
 ! Note these are undefined in first call during init
 ! so use the initial value of zero set above which MCT assumed
           if(.not.first_call) then
-            call mbGetCellTagVals(mbofxid, 'So_avsdr', avsdr, nloc_of)
-            call mbGetCellTagVals(mbofxid, 'So_anidr', anidr, nloc_of)
-            call mbGetCellTagVals(mbofxid, 'So_avsdf', avsdf, nloc_of)
-            call mbGetCellTagVals(mbofxid, 'So_anidf', anidf, nloc_of)
+            call mbGetCellTagVals(mbofxid, trim(seq_comm_mbinst_tags('So_avsdr', lix)), avsdr, nloc_of)
+            call mbGetCellTagVals(mbofxid, trim(seq_comm_mbinst_tags('So_anidr', lix)), anidr, nloc_of)
+            call mbGetCellTagVals(mbofxid, trim(seq_comm_mbinst_tags('So_avsdf', lix)), avsdf, nloc_of)
+            call mbGetCellTagVals(mbofxid, trim(seq_comm_mbinst_tags('So_anidf', lix)), anidf, nloc_of)
 
-            call mbGetCellTagVals(mboxid, 'Faxa_swndr', swndr, nloc_of)
-            call mbGetCellTagVals(mboxid, 'Faxa_swndf', swndf, nloc_of)
-            call mbGetCellTagVals(mboxid, 'Faxa_swvdr', swvdr, nloc_of)
-            call mbGetCellTagVals(mboxid, 'Faxa_swvdf', swvdf, nloc_of)
+            call mbGetCellTagVals(mboxid, trim(seq_comm_mbinst_tags('Faxa_swndr', lia)), swndr, nloc_of)
+            call mbGetCellTagVals(mboxid, trim(seq_comm_mbinst_tags('Faxa_swndf', lia)), swndf, nloc_of)
+            call mbGetCellTagVals(mboxid, trim(seq_comm_mbinst_tags('Faxa_swvdr', lia)), swvdr, nloc_of)
+            call mbGetCellTagVals(mboxid, trim(seq_comm_mbinst_tags('Faxa_swvdf', lia)), swvdf, nloc_of)
           endif
           do n=1,nloc_of
              avsdr1 = avsdr(n)
@@ -1071,8 +1082,8 @@ contains
               swdnc(n) = swdnc1
               swupc(n) = swupc1
           end do
-          call mbSetCellTagVals(mbofxid, 'Faox_swdn', swdnc, nloc_of)
-          call mbSetCellTagVals(mbofxid, 'Faox_swup', swupc, nloc_of)
+          call mbSetCellTagVals(mbofxid, trim(seq_comm_mbinst_tags('Faox_swdn', lix)), swdnc, nloc_of)
+          call mbSetCellTagVals(mbofxid, trim(seq_comm_mbinst_tags('Faox_swup', lix)), swupc, nloc_of)
        endif ! end if mbofxid
 
        ! Solar declination
@@ -1104,10 +1115,10 @@ contains
              end if
           end do   ! nloc_o
           if (mbofxid .ge. 0) then
-             call mbSetCellTagVals(mbofxid, 'So_avsdr', avsdr, nloc_of)
-             call mbSetCellTagVals(mbofxid, 'So_anidr', anidr, nloc_of)
-             call mbSetCellTagVals(mbofxid, 'So_avsdf', avsdf, nloc_of)
-             call mbSetCellTagVals(mbofxid, 'So_anidf', anidf, nloc_of)
+             call mbSetCellTagVals(mbofxid, trim(seq_comm_mbinst_tags('So_avsdr', lix)), avsdr, nloc_of)
+             call mbSetCellTagVals(mbofxid, trim(seq_comm_mbinst_tags('So_anidr', lix)), anidr, nloc_of)
+             call mbSetCellTagVals(mbofxid, trim(seq_comm_mbinst_tags('So_avsdf', lix)), avsdf, nloc_of)
+             call mbSetCellTagVals(mbofxid, trim(seq_comm_mbinst_tags('So_anidf', lix)), anidf, nloc_of)
           endif
 
           update_alb = .true.
@@ -1119,14 +1130,14 @@ contains
 
        ! copy here fractions ifrad and ofrad to moab tags
        if (mboxid > 0 ) then
-         tagname = 'ifrac:ofrac'//C_NULL_CHAR
+         tagname = seq_comm_mbinst_tags('ifrac:ofrac'//C_NULL_CHAR, lif)
          ent_type = mbGetEntityType(mboxid)
          ierr = iMOAB_GetDoubleTagStorage( mboxid, tagname,  arrSize, ent_type, tagValues)
          if (ierr .ne. 0) then
            write(logunit,*) subname,' error in getting ifrac, ofrac  '
            call shr_sys_abort(subname//' ERROR in getting ifrac, ofrac')
          endif
-         tagname = 'ifrad:ofrad'//C_NULL_CHAR
+         tagname = seq_comm_mbinst_tags('ifrad:ofrad'//C_NULL_CHAR, lif)
          ierr = iMOAB_SetDoubleTagStorage( mboxid, tagname,  arrSize, ent_type, tagValues)
          if (ierr .ne. 0) then
            write(logunit,*) subname,' error in setting ifrad, ofrad  '
@@ -1519,7 +1530,7 @@ contains
 
   !===============================================================================
 
-  subroutine seq_flux_atmocn_moab(infodata, tod, dt, a2x, o2x, xao, mbid, mbfid)
+  subroutine seq_flux_atmocn_moab(infodata, tod, dt, a2x, o2x, xao, mbid, mbfid, inst_a, inst_o, inst_x)
     use shr_moab_mod,     only: mbGetnCells,mbGetCellTagVals,mbSetCellTagVals
 
     !-----------------------------------------------------------------------
@@ -1533,6 +1544,9 @@ contains
     type(mct_aVect)         , intent(inout)      :: xao
     integer(in)             , intent(in)         :: mbid ! input atm moab app
     integer(in)             , intent(in)         :: mbfid ! flux moab app
+    ! MOAB instances of a2x, o2x and xao (default 1, see seq_comm_mbinst_tags)
+    integer, optional       , intent(in)         :: inst_a, inst_o, inst_x
+    integer :: lia, lio, lix
     !
     ! Local variables
     !
@@ -1559,6 +1573,13 @@ contains
     character(*),parameter :: subName =   '(seq_flux_atmocn_moab) '
     !
     !-----------------------------------------------------------------------
+
+    lia = 1
+    if (present(inst_a)) lia = inst_a
+    lio = 1
+    if (present(inst_o)) lio = inst_o
+    lix = 1
+    if (present(inst_x)) lix = inst_x
 
     call seq_infodata_getData(infodata , &
          read_restart=read_restart, &
@@ -1742,57 +1763,57 @@ contains
        enddo
     else  ! not dead comps
        ! these calls will completely fill the arrays.
-       call mbGetCellTagVals(mbid, 'Sa_z', zbot, nloc)
-       call mbGetCellTagVals(mbid, 'Sa_u', ubot, nloc)
-       call mbGetCellTagVals(mbid, 'Sa_v', vbot, nloc)
+       call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('Sa_z', lia)), zbot, nloc)
+       call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('Sa_u', lia)), ubot, nloc)
+       call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('Sa_v', lia)), vbot, nloc)
        if (atm_flux_method == 'implicit_stress') then
-          call mbGetCellTagVals(mbid, 'Sa_wsresp', wsresp, nloc)
-          call mbGetCellTagVals(mbid, 'Sa_tau_est', tau_est, nloc)
+          call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('Sa_wsresp', lia)), wsresp, nloc)
+          call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('Sa_tau_est', lia)), tau_est, nloc)
        endif
        if (atm_gustiness) then
-          call mbGetCellTagVals(mbid, 'Sa_ugust', ugust_atm, nloc)
+          call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('Sa_ugust', lia)), ugust_atm, nloc)
        endif
-       call mbGetCellTagVals(mbid, 'Sa_ptem', thbot, nloc)
-       call mbGetCellTagVals(mbid, 'Sa_shum', shum, nloc)
+       call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('Sa_ptem', lia)), thbot, nloc)
+       call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('Sa_shum', lia)), shum, nloc)
        if ( index_a2x_Sa_shum_16O /= 0 ) then
-          call mbGetCellTagVals(mbid, 'Sa_shum_16O', shum_16O, nloc)
+          call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('Sa_shum_16O', lia)), shum_16O, nloc)
        endif
        if ( index_a2x_Sa_shum_HDO /= 0 ) then
-          call mbGetCellTagVals(mbid, 'Sa_shum_HDO', shum_HDO, nloc)
+          call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('Sa_shum_HDO', lia)), shum_HDO, nloc)
        endif
        if ( index_a2x_Sa_shum_18O /= 0 ) then
-          call mbGetCellTagVals(mbid, 'Sa_shum_18O', shum_18O, nloc)
+          call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('Sa_shum_18O', lia)), shum_18O, nloc)
        endif
-       call mbGetCellTagVals(mbid, 'Sa_dens', dens, nloc)
-       call mbGetCellTagVals(mbid, 'Sa_tbot', tbot, nloc)
-       call mbGetCellTagVals(mbid, 'Sa_pslv', pslv, nloc)
+       call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('Sa_dens', lia)), dens, nloc)
+       call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('Sa_tbot', lia)), tbot, nloc)
+       call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('Sa_pslv', lia)), pslv, nloc)
 
-       call mbGetCellTagVals(mbid, 'So_t', tocn, nloc)
-       call mbGetCellTagVals(mbid, 'So_u', uocn, nloc)
-       call mbGetCellTagVals(mbid, 'So_v', vocn, nloc)
+       call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('So_t', lio)), tocn, nloc)
+       call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('So_u', lio)), uocn, nloc)
+       call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('So_v', lio)), vocn, nloc)
 
        if ( index_o2x_So_roce_16O /= 0 ) then
-          call mbGetCellTagVals(mbid, 'So_roce_16O', roce_16O, nloc)
+          call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('So_roce_16O', lio)), roce_16O, nloc)
        endif
        if ( index_o2x_So_roce_HDO /= 0 ) then
-          call mbGetCellTagVals(mbid, 'So_roce_HDO', roce_HDO, nloc)
+          call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('So_roce_HDO', lio)), roce_HDO, nloc)
        endif
        if ( index_o2x_So_roce_18O /= 0 ) then
-          call mbGetCellTagVals(mbid, 'So_roce_18O', roce_18O, nloc)
+          call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('So_roce_18O', lio)), roce_18O, nloc)
        endif
-       call mbGetCellTagVals(mbid, 'Faxa_lwdn', lwdn, nloc)
-       call mbGetCellTagVals(mbid, 'Faxa_rainc', rainc, nloc)
-       call mbGetCellTagVals(mbid, 'Faxa_rainl', rainl, nloc)
-       call mbGetCellTagVals(mbid, 'Faxa_snowc', snowc, nloc)
-       call mbGetCellTagVals(mbid, 'Faxa_snowl', snowl, nloc)
+       call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('Faxa_lwdn', lia)), lwdn, nloc)
+       call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('Faxa_rainc', lia)), rainc, nloc)
+       call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('Faxa_rainl', lia)), rainl, nloc)
+       call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('Faxa_snowc', lia)), snowc, nloc)
+       call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('Faxa_snowl', lia)), snowl, nloc)
 
-       call mbGetCellTagVals(mbid, 'So_fswpen', fswpen, nloc)
-       call mbGetCellTagVals(mbid, 'So_s', ocnsal, nloc)
+       call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('So_fswpen', lio)), fswpen, nloc)
+       call mbGetCellTagVals(mbid, trim(seq_comm_mbinst_tags('So_s', lio)), ocnsal, nloc)
 
        if (flux_diurnal) then
-         call mbGetCellTagVals(mbfid, 'So_warm_diurn', warm, nloc)
-         call mbGetCellTagVals(mbfid, 'So_salt_diurn', salt, nloc)
-         call mbGetCellTagVals(mbfid, 'So_speed_diurn', speed, nloc)
+         call mbGetCellTagVals(mbfid, trim(seq_comm_mbinst_tags('So_warm_diurn', lix)), warm, nloc)
+         call mbGetCellTagVals(mbfid, trim(seq_comm_mbinst_tags('So_salt_diurn', lix)), salt, nloc)
+         call mbGetCellTagVals(mbfid, trim(seq_comm_mbinst_tags('So_speed_diurn', lix)), speed, nloc)
          ! TODO:  Finish with more diun if we're keeping that option
        endif
 
@@ -1919,25 +1940,25 @@ contains
     enddo
 
 
-    call mbSetCellTagVals(mbfid, 'Faox_sen', sen, nloc)
-    call mbSetCellTagVals(mbfid, 'Faox_lat', lat, nloc)
-    call mbSetCellTagVals(mbfid, 'Faox_taux', taux, nloc)
-    call mbSetCellTagVals(mbfid, 'Faox_tauy', tauy, nloc)
-    call mbSetCellTagVals(mbfid, 'Faox_evap', evap, nloc)
+    call mbSetCellTagVals(mbfid, trim(seq_comm_mbinst_tags('Faox_sen', lix)), sen, nloc)
+    call mbSetCellTagVals(mbfid, trim(seq_comm_mbinst_tags('Faox_lat', lix)), lat, nloc)
+    call mbSetCellTagVals(mbfid, trim(seq_comm_mbinst_tags('Faox_taux', lix)), taux, nloc)
+    call mbSetCellTagVals(mbfid, trim(seq_comm_mbinst_tags('Faox_tauy', lix)), tauy, nloc)
+    call mbSetCellTagVals(mbfid, trim(seq_comm_mbinst_tags('Faox_evap', lix)), evap, nloc)
     ! TODO:  evap isotopes
-    call mbSetCellTagVals(mbfid, 'So_tref', tref, nloc)
-    call mbSetCellTagVals(mbfid, 'So_qref', qref, nloc)
-    call mbSetCellTagVals(mbfid, 'So_ustar', ustar, nloc)
-    call mbSetCellTagVals(mbfid, 'So_re', re, nloc)
-    call mbSetCellTagVals(mbfid, 'So_ssq', ssq, nloc)
-    call mbSetCellTagVals(mbfid, 'Faox_lwup', lwup, nloc)
-    call mbSetCellTagVals(mbfid, 'So_duu10n', duu10n, nloc)
-    call mbSetCellTagVals(mbfid, 'So_u10', u10res, nloc)
+    call mbSetCellTagVals(mbfid, trim(seq_comm_mbinst_tags('So_tref', lix)), tref, nloc)
+    call mbSetCellTagVals(mbfid, trim(seq_comm_mbinst_tags('So_qref', lix)), qref, nloc)
+    call mbSetCellTagVals(mbfid, trim(seq_comm_mbinst_tags('So_ustar', lix)), ustar, nloc)
+    call mbSetCellTagVals(mbfid, trim(seq_comm_mbinst_tags('So_re', lix)), re, nloc)
+    call mbSetCellTagVals(mbfid, trim(seq_comm_mbinst_tags('So_ssq', lix)), ssq, nloc)
+    call mbSetCellTagVals(mbfid, trim(seq_comm_mbinst_tags('Faox_lwup', lix)), lwup, nloc)
+    call mbSetCellTagVals(mbfid, trim(seq_comm_mbinst_tags('So_duu10n', lix)), duu10n, nloc)
+    call mbSetCellTagVals(mbfid, trim(seq_comm_mbinst_tags('So_u10', lix)), u10res, nloc)
     u10gust = sqrt(duu10n)
-    call mbSetCellTagVals(mbfid, 'So_u10withgusts', u10gust, nloc)
+    call mbSetCellTagVals(mbfid, trim(seq_comm_mbinst_tags('So_u10withgusts', lix)), u10gust, nloc)
     ! xao copy of fswpen: renamed So_fswpen_ao so it does not collide with the o2x So_fswpen
     ! tag on the shared (aliased) ocn coupler mesh. See seq_flds_mod / cplcomp_moab_init_ocn.
-    call mbSetCellTagVals(mbfid, 'So_fswpen_ao', fswpen, nloc)
+    call mbSetCellTagVals(mbfid, trim(seq_comm_mbinst_tags('So_fswpen_ao', lix)), fswpen, nloc)
 
 #ifdef MOABDEBUG
         ! debug out file

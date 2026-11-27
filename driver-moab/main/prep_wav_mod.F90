@@ -305,7 +305,8 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eai = 1,num_inst_atm
        a2x_ax => component_get_c2x_cx(atm(eai))
-       call seq_map_map(mapper_Sa2w, a2x_ax, a2x_wx(eai), norm=.true.)
+       call seq_map_map(mapper_Sa2w, a2x_ax, a2x_wx(eai), norm=.true., &
+            inst_s=eai, inst_d=eai)
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_wav_calc_a2x_wx
@@ -329,7 +330,8 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eoi = 1,num_inst_ocn
        o2x_ox => component_get_c2x_cx(ocn(eoi))
-       call seq_map_map(mapper_So2w, o2x_ox, o2x_wx(eoi), norm=.true.)
+       call seq_map_map(mapper_So2w, o2x_ox, o2x_wx(eoi), norm=.true., &
+            inst_s=eoi, inst_d=eoi)
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_wav_calc_o2x_wx
@@ -353,7 +355,8 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eii = 1,num_inst_ice
        i2x_ix => component_get_c2x_cx(ice(eii))
-       call seq_map_map(mapper_Si2w, i2x_ix, i2x_wx(eii), norm=.true.)
+       call seq_map_map(mapper_Si2w, i2x_ix, i2x_wx(eii), norm=.true., &
+            inst_s=eii, inst_d=eii)
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_wav_calc_i2x_wx

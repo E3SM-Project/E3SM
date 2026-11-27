@@ -1,5 +1,8 @@
 module prep_ocn_mod
 
+  use cplcomp_moab_helpers_mod, only: moab_set_tags_all_inst
+  use seq_comm_mct, only: seq_comm_mbinst_tags
+  use cplcomp_moab_helpers_mod, only: moab_define_tags
   use shr_kind_mod,     only: R8 => SHR_KIND_R8
   use shr_kind_mod,     only: cs => SHR_KIND_CS
   use shr_kind_mod,     only: cl => SHR_KIND_CL
@@ -130,7 +133,7 @@ module prep_ocn_mod
   integer        , target  :: x2oacc_ox_cnt ! x2oacc_ox: number of time samples accumulated
 
   ! accumulation variables for moab data
-  real (kind=R8) , allocatable, private, target :: x2oacc_om (:,:)   ! Ocn import, ocn grid, cpl pes, moab array
+  real (kind=R8) , allocatable, private, target :: x2oacc_om (:,:,:) ! Ocn import, ocn grid, cpl pes, moab array; last index = ocean instance
   integer        , target  :: x2oacc_om_cnt ! x2oacc_ox: number of time samples accumulated, in moab array
   integer                  :: arrSize_x2o_om !   this will be a module variable, size moabLocal_size * nof
 
@@ -389,9 +392,9 @@ contains
           call shr_sys_abort(subname//' ERROR in getting size of ocn mesh')
        endif
        mlsize = mbGetnCells(mboxid)
-       allocate(x2oacc_om(mlsize, noflds))
+       allocate(x2oacc_om(mlsize, noflds, num_inst_ocn))
        x2oacc_om_cnt = 0
-       x2oacc_om(:,:)=0.
+       x2oacc_om(:,:,:)=0.
 
        ! moab accumulation variable
 
@@ -449,7 +452,7 @@ contains
             tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
             tagtype = 1 ! dense
             numco = 1 !
-            ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco, tagindex )
+            ierr = moab_define_tags(mboxid, tagname, tagtype, numco, tagindex )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields on OCN cpl'
                call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on OCN cpl')
@@ -739,7 +742,7 @@ contains
             tagtype = 1  ! dense, double
             numco = 1 !  one value per cell / entity
             tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
-            ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
+            ierr = moab_define_tags(mboxid, tagname, tagtype, numco,  tagindex )
             if ( ierr == 1 ) then
                call shr_sys_abort( subname//' ERROR: cannot define tags for ice proj to ocn' )
             end if
@@ -804,7 +807,7 @@ contains
             tagname=trim(seq_flds_r2x_fields)//C_NULL_CHAR
             tagtype = 1 ! dense, double
             numco = 1 ! only 1 component DoF per node
-            ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco, tagindex )
+            ierr = moab_define_tags(mboxid, tagname, tagtype, numco, tagindex )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in defining ' // trim(seq_flds_r2x_fields) // ' tags on coupler side in MOAB, for ocean app'
                call shr_sys_abort(subname//' ERROR in defining MOAB tags ')
@@ -828,7 +831,7 @@ contains
          allocate (tmparray(arrsize)) ! mlsize is the size of local land
          ! do we need to zero out others or just river ?
          tmparray = 0._R8
-         ierr = iMOAB_SetDoubleTagStorage(mboxid, tagname, arrsize , ent_type, tmparray)
+         ierr = moab_set_tags_all_inst(mboxid, tagname, arrsize , ent_type, tmparray)
          if (ierr .ne. 0) then
             write(logunit,*) subname,' cant zero out r2x tags on OCN'
             call shr_sys_abort(subname//' cant zero out r2x tags on OCN')
@@ -1024,12 +1027,14 @@ contains
     ! Accumulate ocn inputs
     ! Form partial sum of tavg ocn inputs (virtual "send" to ocn)
     ! NOTE: this is done AFTER the call to the merge in prep_ocn_mrg
+    ! One sum per ocean instance (x2oacc_om(:,:,eoi)), from the instance tags
+    ! of x2o on the coupler ocean mesh.
     use iMOAB, only : iMOAB_GetDoubleTagStorage
     ! Arguments
     character(len=*)        , intent(in) :: timer
     !
     ! Local Variables
-    integer   :: ent_type, ierr
+    integer   :: ent_type, ierr, eoi
     character(CXX)  :: tagname
     character(*)    , parameter :: subname = '(prep_ocn_accum_moab)'
     !---------------------------------------------------------------
@@ -1037,19 +1042,20 @@ contains
     call t_drvstartf (trim(timer), barrier=mpicom_CPLID)
     ! this method is called after merge, so it is not really necessary, because
     ! x2o_om should be saved between these calls
-    tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
     ent_type = mbGetEntityType(mboxid)
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrSize_x2o_om , ent_type, x2o_om)
-    if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in getting x2o_om array  ')
-    endif
+    do eoi = 1,num_inst_ocn
+       tagname = seq_comm_mbinst_tags(trim(seq_flds_x2o_fields)//C_NULL_CHAR, eoi)
+       ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrSize_x2o_om , ent_type, x2o_om)
+       if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting x2o_om array  ')
+       endif
 
-
-    if (x2oacc_om_cnt == 0) then
-       x2oacc_om = x2o_om
-    else
-       x2oacc_om = x2oacc_om + x2o_om
-    endif
+       if (x2oacc_om_cnt == 0) then
+          x2oacc_om(:,:,eoi) = x2o_om
+       else
+          x2oacc_om(:,:,eoi) = x2oacc_om(:,:,eoi) + x2o_om
+       endif
+    enddo
 
     x2oacc_om_cnt = x2oacc_om_cnt + 1
     call t_drvstopf  (trim(timer))
@@ -1062,7 +1068,7 @@ contains
 subroutine prep_ocn_accum_avg_moab(timer_accum)
     !---------------------------------------------------------------
     ! Description
-    ! Finish accumulation ocn inputs
+    ! Finish accumulation ocn inputs, for every ocean instance
     !
     use iMOAB, only : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
     !
@@ -1070,7 +1076,7 @@ subroutine prep_ocn_accum_avg_moab(timer_accum)
     character(len=*), intent(in) :: timer_accum
     !
     ! Local Variables
-    integer   :: ent_type, ierr
+    integer   :: ent_type, ierr, eoi
     integer noflds, lsize ! used for restart case only?
     real(r8) :: ravg
     character(CXX)  :: tagname
@@ -1081,33 +1087,33 @@ subroutine prep_ocn_accum_avg_moab(timer_accum)
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer_accum), barrier=mpicom_CPLID)
+
+    if (.not. allocated(x2o_om)) then
+       ! we could come here in the restart case; not sure why only for
+       ! the case ERS_Vmoab_T62_oQU120.CMPASO-NYF
+       lsize = size(x2oacc_om, 1)
+       noflds = size(x2oacc_om, 2)
+       allocate (x2o_om(lsize, noflds))
+       arrSize_x2o_om = noflds * lsize
+    endif
+    ent_type = mbGetEntityType(mboxid)
+
+    do eoi = 1,num_inst_ocn
        ! temporary formation of average
        if (x2oacc_om_cnt > 1) then
-          !call mct_avect_avg(x2oacc_ox(eoi), x2oacc_ox_cnt)
           ravg = 1.0_r8/real(x2oacc_om_cnt, r8)
-          x2oacc_om = x2oacc_om * ravg
+          x2oacc_om(:,:,eoi) = x2oacc_om(:,:,eoi) * ravg
        end if
 
-       if (.not. allocated(x2o_om)) then
-          ! we could come here in the restart case; not sure why only for
-          ! the case ERS_Vmoab_T62_oQU120.CMPASO-NYF
-          lsize = size(x2oacc_om, 1)
-          noflds = size(x2oacc_om, 2)
-          allocate (x2o_om(lsize, noflds))
-          arrSize_x2o_om = noflds * lsize
-       endif
-
        ! ***NOTE***THE FOLLOWING ACTUALLY MODIFIES x2o_om
-
-       x2o_om   = x2oacc_om
-       !call mct_avect_copy(x2oacc_ox(eoi), x2o_ox)
+       x2o_om   = x2oacc_om(:,:,eoi)
        ! modify the tags
-       tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
-       ent_type = mbGetEntityType(mboxid)
+       tagname = seq_comm_mbinst_tags(trim(seq_flds_x2o_fields)//C_NULL_CHAR, eoi)
        ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrSize_x2o_om , ent_type, x2o_om)
        if (ierr .ne. 0) then
             call shr_sys_abort(subname//' error in setting x2o_om array  ')
-      endif
+       endif
+    enddo
 #ifdef MOABDEBUG
       if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
          write(lnum,"(I0.2)")num_moab_exports
@@ -1158,6 +1164,8 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
     integer  :: n,ka,ki,ko,kr,kw,kx,kir,kor,i,i1,o1
     integer  :: kof,kif
     integer  :: lsize, arrsize ! for double arrays
+    integer  :: emi, eoi, eai, eii, eri, exi, efi  ! instance indices
+    real(r8), allocatable :: x2o_avg_om(:,:), shared_avg_values(:)  ! x2o_average sums
     integer , save :: noflds,naflds,niflds,nrflds,nxflds!  ,ngflds,nwflds, no glacier or wave model
     real(R8) :: ifrac,ifracr
     real(R8) :: afrac,afracr
@@ -1728,16 +1736,28 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
    !  kir = mct_aVect_indexRa(fractions_ox,"ifrad",perrWith=subName)
    !  kor = mct_aVect_indexRa(fractions_ox,"ofrad",perrWith=subName)
 
+    ! one merge per ocean instance (emi = instance of the merge), with the
+    ! instances of the other components paired as in the MCT driver
+    ! (prep_ocn_mrg). With one ocean and several instances of the other
+    ! components (x2o_average) the merges are averaged into the ocean instance.
+    do emi = 1,num_inst_max
+       eoi = mod((emi-1),num_inst_ocn) + 1
+       eai = mod((emi-1),num_inst_atm) + 1
+       eii = mod((emi-1),num_inst_ice) + 1
+       eri = mod((emi-1),num_inst_rof) + 1
+       exi = mod((emi-1),num_inst_xao) + 1
+       efi = mod((emi-1),num_inst_frc) + 1
+
     ! fill with fractions from ocean instance
     ent_type = mbGetEntityType(mboxid)
-    tagname = 'afrac:ifrac:ofrac:ifrad:ofrad'//C_NULL_CHAR
+    tagname = seq_comm_mbinst_tags('afrac:ifrac:ofrac:ifrad:ofrad'//C_NULL_CHAR, efi)
     arrsize = 5 * lsize
     ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize, ent_type, fractions_om)
     if (ierr .ne. 0) then
          call shr_sys_abort(subname//' error in getting fractions_om from ocean instance ')
     endif
    ! fill the o2x_om, etc double array fields noflds
-    tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
+    tagname = seq_comm_mbinst_tags(trim(seq_flds_x2o_fields)//C_NULL_CHAR, eoi)
     arrsize = noflds * lsize
     ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, x2o_om)
     if (ierr .ne. 0) then
@@ -1774,14 +1794,14 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
        endif
     endif
 
-    tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+    tagname = seq_comm_mbinst_tags(trim(seq_flds_a2x_fields)//C_NULL_CHAR, eai)
     arrsize = naflds * lsize !        allocate (a2x_om (lsize, naflds))
     ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, a2x_om)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting a2x_om array ')
     endif
 
-    tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
+    tagname = seq_comm_mbinst_tags(trim(seq_flds_i2x_fields)//C_NULL_CHAR, eii)
     arrsize = niflds * lsize !        allocate (i2x_om (lsize, niflds))
     ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, i2x_om)
     if (ierr .ne. 0) then
@@ -1789,14 +1809,14 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
     endif
 
     if (rof_c2_ocn_saved) then
-      tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
+      tagname = seq_comm_mbinst_tags(trim(seq_flds_r2x_fields)//C_NULL_CHAR, eri)
       arrsize = nrflds * lsize !        allocate (r2x_om (lsize, nrflds))
       ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, r2x_om)
       if (ierr .ne. 0) then
         call shr_sys_abort(subname//' error in getting r2x_om array ')
       endif
     endif
-    tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
+    tagname = seq_comm_mbinst_tags(trim(seq_flds_xao_fields)//C_NULL_CHAR, exi)
     arrsize = nxflds * lsize !        allocate (xao_om (lsize, nxflds))
     ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, arrsize , ent_type, xao_om)
     if (ierr .ne. 0) then
@@ -1979,7 +1999,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
 
     do ko = 1,noflds
        !--- document merge ---
-       if (first_time) then
+       if (first_time .and. emi == 1) then
           if (iindx(ko) > 0) then
              if (imerge(ko)) then
                 mrgstr(ko) = trim(mrgstr(ko))//' + ifrac*i2x%'//trim(field_ice(iindx(ko)))
@@ -2036,22 +2056,52 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
     end do
 
    ! after we are done, set x2o_om to the mboxid
-    tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
+    ! we still need to get/set the shared fields between xao and x2o:
+    tagname = seq_comm_mbinst_tags(trim(shared_fields_xao_x2o)//C_NULL_CHAR, exi)
+    ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, size_of_shared_values , ent_type, shared_values)
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in getting shared_values array ')
+    endif
+    if (x2o_average) then
+       if (emi == 1) then
+          allocate(x2o_avg_om(lsize, noflds), shared_avg_values(size(shared_values)))
+          x2o_avg_om = 0.0_r8
+          shared_avg_values = 0.0_r8
+       endif
+       x2o_avg_om = x2o_avg_om + x2o_om
+       shared_avg_values = shared_avg_values + shared_values
+    else
+    tagname = seq_comm_mbinst_tags(trim(seq_flds_x2o_fields)//C_NULL_CHAR, eoi)
     arrsize = noflds * lsize
     ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, x2o_om)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in setting x2o_om array ')
     endif
 
-    ! we still need to get/set the shared fields between xao and x2o:
-    tagname = trim(shared_fields_xao_x2o)//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, size_of_shared_values , ent_type, shared_values)
-    if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in getting shared_values array ')
-    endif
+    tagname = seq_comm_mbinst_tags(trim(shared_fields_xao_x2o)//C_NULL_CHAR, eoi)
     ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, size_of_shared_values , ent_type, shared_values)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in setting shared_values array on ocean instance')
+    endif
+    endif ! x2o_average
+
+    enddo ! emi
+    if (x2o_average) then
+       ! average of the merges, set on the ocean instance
+       x2o_om = x2o_avg_om / real(num_inst_max, r8)
+       tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
+       arrsize = noflds * lsize
+       ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, x2o_om)
+       if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in setting averaged x2o_om array ')
+       endif
+       shared_values = shared_avg_values / real(num_inst_max, r8)
+       tagname = trim(shared_fields_xao_x2o)//C_NULL_CHAR
+       ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, size_of_shared_values , ent_type, shared_values)
+       if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in setting averaged shared_values array on ocean instance')
+       endif
+       deallocate(x2o_avg_om, shared_avg_values)
     endif
 
 
@@ -2108,12 +2158,15 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
     do eai = 1,num_inst_atm
        a2x_ax => component_get_c2x_cx(atm(eai))
 
-       call seq_map_map(mapper_Sa2o, a2x_ax, a2x_ox(eai), fldlist=seq_flds_a2x_states, norm=.true.)
+       call seq_map_map(mapper_Sa2o, a2x_ax, a2x_ox(eai), fldlist=seq_flds_a2x_states, norm=.true., &
+            inst_s=eai, inst_d=eai)
 
-       call seq_map_map(mapper_Fa2o, a2x_ax, a2x_ox(eai), fldlist=seq_flds_a2x_fluxes, norm=.true.)
+       call seq_map_map(mapper_Fa2o, a2x_ax, a2x_ox(eai), fldlist=seq_flds_a2x_fluxes, norm=.true., &
+            inst_s=eai, inst_d=eai)
 
        !--- tcx the norm should be true below, it's false for bfb backwards compatability
-       call seq_map_mapvect(mapper_Va2o, vect_map, a2x_ax, a2x_ox(eai), 'Sa_u', 'Sa_v', norm=.false.)
+       call seq_map_mapvect(mapper_Va2o, vect_map, a2x_ax, a2x_ox(eai), 'Sa_u', 'Sa_v', norm=.false., &
+            inst_s=eai, inst_d=eai)
 
     enddo
 
@@ -2138,7 +2191,8 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eii = 1,num_inst_ice
        i2x_ix => component_get_c2x_cx(ice(eii))
-       call seq_map_map(mapper_SFi2o, i2x_ix, i2x_ox(eii), norm=.true.)
+       call seq_map_map(mapper_SFi2o, i2x_ix, i2x_ox(eii), norm=.true., &
+            inst_s=eii, inst_d=eii)
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -2181,12 +2235,15 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
     do eri = 1,num_inst_rof
        r2x_rx => component_get_c2x_cx(rof(eri))
        call seq_map_map(mapper_Rr2o_liq, r2x_rx, r2x_ox(eri), &
-            fldlist=seq_flds_r2o_liq_fluxes, norm=.false.)
+            fldlist=seq_flds_r2o_liq_fluxes, norm=.false., &
+                 inst_s=eri, inst_d=eri)
        call seq_map_map(mapper_Rr2o_ice, r2x_rx, r2x_ox(eri), &
-            fldlist=seq_flds_r2o_ice_fluxes, norm=.false.)
+            fldlist=seq_flds_r2o_ice_fluxes, norm=.false., &
+                 inst_s=eri, inst_d=eri)
        if (flood_present) then
           call seq_map_map(mapper_Fr2o, r2x_rx, r2x_ox(eri), &
-               fldlist='Flrr_flood', norm=.true.)
+               fldlist='Flrr_flood', norm=.true., &
+                    inst_s=eri, inst_d=eri)
        endif
     enddo
     call t_drvstopf  (trim(timer))
@@ -2221,10 +2278,12 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
     do egi = 1,num_inst_glc
        g2x_gx => component_get_c2x_cx(glc(egi))
        call seq_map_map(mapper_Rg2o_liq, g2x_gx, g2x_ox(egi), &
-            fldlist=seq_flds_g2o_liq_fluxes, norm=.false.)
+            fldlist=seq_flds_g2o_liq_fluxes, norm=.false., &
+                 inst_s=egi, inst_d=egi)
 
        call seq_map_map(mapper_Rg2o_ice, g2x_gx, g2x_ox(egi), &
-            fldlist=seq_flds_g2o_ice_fluxes, norm=.false.)
+            fldlist=seq_flds_g2o_ice_fluxes, norm=.false., &
+                 inst_s=egi, inst_d=egi)
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_ocn_calc_g2x_ox
@@ -2249,9 +2308,11 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
     do egi = 1,num_inst_glc
        g2x_gx => component_get_c2x_cx(glc(egi))
 
-       call seq_map_map(mapper_Sg2o, g2x_gx, g2x_ox(egi), norm=.true.)
+       call seq_map_map(mapper_Sg2o, g2x_gx, g2x_ox(egi), norm=.true., &
+            inst_s=egi, inst_d=egi)
 
-       call seq_map_map(mapper_Fg2o, g2x_gx, g2x_ox(egi),norm=.true.)
+       call seq_map_map(mapper_Fg2o, g2x_gx, g2x_ox(egi),norm=.true., &
+            inst_s=egi, inst_d=egi)
 
 
     enddo
@@ -2277,7 +2338,8 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do ewi = 1,num_inst_wav
        w2x_wx => component_get_c2x_cx(wav(ewi))
-       call seq_map_map(mapper_Sw2o, w2x_wx, w2x_ox(ewi), norm=.true.)
+       call seq_map_map(mapper_Sw2o, w2x_wx, w2x_ox(ewi), norm=.true., &
+            inst_s=ewi, inst_d=ewi)
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_ocn_calc_w2x_ox
@@ -2378,9 +2440,13 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
     type(seq_map), pointer :: prep_ocn_get_mapper_Sw2o
     prep_ocn_get_mapper_Sw2o => mapper_Sw2o
   end function prep_ocn_get_mapper_Sw2o
-  function prep_ocn_get_x2oacc_om()
+  function prep_ocn_get_x2oacc_om(inst)
+    integer, optional, intent(in) :: inst   ! ocean instance (default 1)
     real(R8), DIMENSION(:, :), pointer :: prep_ocn_get_x2oacc_om
-    prep_ocn_get_x2oacc_om => x2oacc_om
+    integer :: k
+    k = 1
+    if (present(inst)) k = inst
+    prep_ocn_get_x2oacc_om => x2oacc_om(:,:,k)
   end function prep_ocn_get_x2oacc_om
   function prep_ocn_get_x2oacc_om_cnt()
     integer, pointer :: prep_ocn_get_x2oacc_om_cnt

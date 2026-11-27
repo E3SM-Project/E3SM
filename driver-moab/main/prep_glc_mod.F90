@@ -1,5 +1,6 @@
 module prep_glc_mod
 
+  use cplcomp_moab_helpers_mod, only: moab_define_tags
 #include "shr_assert.h"
   use shr_kind_mod    , only: r8 => SHR_KIND_R8
   use shr_kind_mod    , only: cl => SHR_KIND_CL
@@ -346,7 +347,7 @@ contains
              tagtype = 1  ! dense, double
              numco = 1
              tagname = trim(seq_flds_l2x_fields_to_glc)//C_NULL_CHAR
-             ierr = iMOAB_DefineTagStorage(mbgxid, tagname, tagtype, numco, tagindex )
+             ierr = moab_define_tags(mbgxid, tagname, tagtype, numco, tagindex )
              if (ierr .ne. 0) then
                 call shr_sys_abort(subname//' ERROR defining lnd per-EC tags on the glc mesh')
              endif
@@ -813,11 +814,13 @@ contains
       o2x_ox => component_get_c2x_cx(ocn(eoi))
       if (ocn_c2_glctf) then
          call seq_map_map(mapper_So2g_tf, o2x_ox, o2x_gx(eoi), &
-                       fldlist=seq_flds_x2g_tf_states_from_ocn,norm=.true.)
+                       fldlist=seq_flds_x2g_tf_states_from_ocn,norm=.true., &
+                            inst_s=eoi, inst_d=eoi)
       end if
       if (ocn_c2_glcshelf) then
          call seq_map_map(mapper_So2g_shelf, o2x_ox, o2x_gx(eoi), &
-                       fldlist=seq_flds_x2g_shelf_states_from_ocn,norm=.true.)
+                       fldlist=seq_flds_x2g_shelf_states_from_ocn,norm=.true., &
+                            inst_s=eoi, inst_d=eoi)
       end if
     enddo
 

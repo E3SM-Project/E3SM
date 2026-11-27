@@ -1,5 +1,7 @@
 module prep_atm_mod
 
+  use seq_comm_mct, only: seq_comm_mbinst_tags
+  use cplcomp_moab_helpers_mod, only: moab_define_tags
   use shr_kind_mod,     only: r8 => SHR_KIND_R8
   use shr_kind_mod,     only: cs => SHR_KIND_CS
   use shr_kind_mod,     only: cl => SHR_KIND_CL
@@ -291,7 +293,7 @@ contains
             tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
             tagtype = 1 ! dense
             numco = 1 !
-            ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+            ierr = moab_define_tags(mbaxid, tagname, tagtype, numco,  tagindex )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in defining tags for seq_flds_o2x_fields'
                call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_o2x_fields')
@@ -537,7 +539,7 @@ contains
       tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
       tagtype = 1 ! dense
       numco = 1 !
-      ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+      ierr = moab_define_tags(mbaxid, tagname, tagtype, numco,  tagindex )
       if (ierr .ne. 0) then
          write(logunit,*) subname,' error in defining tags for seq_flds_i2x_fields'
          call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_i2x_fields')
@@ -778,7 +780,7 @@ contains
          tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
          tagtype = 1 ! dense
          numco = 1 !
-         ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+         ierr = moab_define_tags(mbaxid, tagname, tagtype, numco,  tagindex )
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in defining tags for seq_flds_l2x_fields'
             call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_l2x_fields')
@@ -1060,6 +1062,7 @@ contains
 #endif
 
     character(*), parameter   :: subname = '(prep_atm_mrg_moab) '
+    integer :: eai, eli, eoi, eii, exi, efi, emi  ! instance indices
     !-----------------------------------------------------------------------
     !
     call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
@@ -1290,13 +1293,23 @@ contains
        end do
     endif  ! end first-time
 
+    ! one merge per atmosphere instance, with the instances of the other
+    ! components paired as in the MCT driver (prep_atm_mrg)
+    do eai = 1,num_inst_atm
+       eli = mod((eai-1),num_inst_lnd) + 1
+       eoi = mod((eai-1),num_inst_ocn) + 1
+       eii = mod((eai-1),num_inst_ice) + 1
+       exi = mod((eai-1),num_inst_xao) + 1
+       efi = mod((eai-1),num_inst_frc) + 1
+       emi = mod((eai-1),num_inst_max) + 1
+
     !  Get data from MOAB
     if (atm_coupler_mesh_is_fv) then
        ent_type = 1 ! cells (PG atmosphere or dead comps FV mesh)
     else
        ent_type = 0 ! vertices, spectral point cloud
     endif
-    tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
+    tagname = seq_comm_mbinst_tags(trim(seq_flds_x2a_fields)//C_NULL_CHAR, eai)
     arrsize = naflds * lsize
     ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, x2a_am)
     if (ierr .ne. 0) then
@@ -1326,7 +1339,7 @@ contains
 
     ! fill with fractions from atm instance
 
-    tagname = 'afrac:ifrac:ofrac:lfrac:lfrin'//C_NULL_CHAR
+    tagname = seq_comm_mbinst_tags('afrac:ifrac:ofrac:lfrac:lfrin'//C_NULL_CHAR, efi)
     arrsize = 5 * lsize
     ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, fractions_am)
     if (ierr .ne. 0) then
@@ -1334,7 +1347,7 @@ contains
     endif
 
     if (mboxid > 0) then ! retrieve projection only when ox is active ?
-       tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
+       tagname = seq_comm_mbinst_tags(trim(seq_flds_o2x_fields)//C_NULL_CHAR, emi)
        arrsize = noflds * lsize !        allocate (o2x_am (lsize, noflds))
        ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, o2x_am)
        if (ierr .ne. 0) then
@@ -1345,7 +1358,7 @@ contains
     endif
 
     if (mbixid > 0) then
-       tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
+       tagname = seq_comm_mbinst_tags(trim(seq_flds_i2x_fields)//C_NULL_CHAR, eii)
        arrsize = niflds * lsize !        allocate (i2x_am (lsize, niflds))
        ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, i2x_am)
        if (ierr .ne. 0) then
@@ -1356,7 +1369,7 @@ contains
     endif
 
     if (mblxid > 0) then !
-       tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
+       tagname = seq_comm_mbinst_tags(trim(seq_flds_l2x_fields)//C_NULL_CHAR, eli)
        arrsize = nlflds * lsize !        allocate (l2x_am (lsize, nlflds))
        ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, l2x_am)
        if (ierr .ne. 0) then
@@ -1367,7 +1380,7 @@ contains
     endif
 
     if (mboxid > 0) then
-       tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
+       tagname = seq_comm_mbinst_tags(trim(seq_flds_xao_fields)//C_NULL_CHAR, exi)
        arrsize = nxflds * lsize !        allocate (xao_am (lsize, nxflds))
        ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, xao_am)
        if (ierr .ne. 0) then
@@ -1387,7 +1400,7 @@ contains
     end do
 
     !--- document fraction operations ---
-    if (first_time) then
+    if (first_time .and. eai == 1) then
        mrgstr(index_x2a_sf_lfrac) = trim(mrgstr(index_x2a_sf_lfrac))//' = fractions_a%'//trim(fracstr)
        mrgstr(index_x2a_sf_ifrac) = trim(mrgstr(index_x2a_sf_ifrac))//' = fractions_a%ifrac'
        mrgstr(index_x2a_sf_ofrac) = trim(mrgstr(index_x2a_sf_ofrac))//' = fractions_a%ofrac'
@@ -1398,7 +1411,7 @@ contains
     ! (o2x_a and x2a_a) and in (l2x_a and x2a_a), etc.
 
     !--- document copy operations ---
-    if (first_time) then
+    if (first_time .and. eai == 1) then
        !--- document merge ---
        do i=1,l2x_SharedIndices%shared_real%num_indices
           i1=l2x_SharedIndices%shared_real%aVindices1(i)
@@ -1445,7 +1458,7 @@ contains
 
     do ka = 1,naflds
        !--- document merge ---
-       if (first_time) then
+       if (first_time .and. eai == 1) then
           if (lindx(ka) > 0) then
              if (lstate(ka)) then
                 if (lmerge(ka)) then
@@ -1541,12 +1554,14 @@ contains
 
 ! after we are done, set x2a_am to the mbaxid
 
-    tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
+    tagname = seq_comm_mbinst_tags(trim(seq_flds_x2a_fields)//C_NULL_CHAR, eai)
     arrsize = naflds * lsize
     ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, x2a_am)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in setting x2a_am array in atm merging ')
     endif
+
+    enddo ! eai
 
 #ifdef MOABDEBUG
     if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
@@ -1608,13 +1623,16 @@ contains
        if (present(fractions_ox)) then
           call seq_map_map(mapper_So2a, o2x_ox, o2x_ax(emi),&
                fldlist=seq_flds_o2x_states,norm=.true., &
-               avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
+               avwts_s=fractions_ox(efi),avwtsfld_s='ofrac', &
+                    inst_s=eoi, inst_d=emi, inst_w=efi)
        else
           call seq_map_map(mapper_So2a, o2x_ox, o2x_ax(emi),&
-               fldlist=seq_flds_o2x_states,norm=.true.)
+               fldlist=seq_flds_o2x_states,norm=.true., &
+                    inst_s=eoi, inst_d=emi)
        endif
        call seq_map_map(mapper_Fo2a, o2x_ox, o2x_ax(emi),&
-            fldlist=seq_flds_o2x_fluxes,norm=.true.)
+            fldlist=seq_flds_o2x_fluxes,norm=.true., &
+                 inst_s=eoi, inst_d=emi)
     enddo
 
     call t_drvstopf  (trim(timer))
@@ -1646,10 +1664,12 @@ contains
        i2x_ix => component_get_c2x_cx(ice(eii))
        call seq_map_map(mapper_Si2a, i2x_ix, i2x_ax(eii), &
             fldlist=seq_flds_i2x_states, &
-            avwts_s=fractions_ix(eii), avwtsfld_s='ifrac')
+            avwts_s=fractions_ix(eii), avwtsfld_s='ifrac', &
+                 inst_s=eii, inst_d=eii, inst_w=eii)
        call seq_map_map(mapper_Fi2a, i2x_ix, i2x_ax(eii), &
             fldlist=seq_flds_i2x_fluxes, &
-            avwts_s=fractions_ix(eii), avwtsfld_s='ifrac')
+            avwts_s=fractions_ix(eii), avwtsfld_s='ifrac', &
+                 inst_s=eii, inst_d=eii, inst_w=eii)
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -1680,10 +1700,12 @@ contains
        l2x_lx => component_get_c2x_cx(lnd(eli))
        call seq_map_map(mapper_Sl2a, l2x_lx, l2x_ax(eli), &
             fldlist=seq_flds_l2x_states, norm=.true., &
-            avwts_s=fractions_lx(efi), avwtsfld_s='lfrin')
+            avwts_s=fractions_lx(efi), avwtsfld_s='lfrin', &
+                 inst_s=eli, inst_d=eli, inst_w=efi)
        call seq_map_map(mapper_Fl2a, l2x_lx, l2x_ax(eli), &
             fldlist=seq_flds_l2x_fluxes, norm=.true., &
-            avwts_s=fractions_lx(efi), avwtsfld_s='lfrin')
+            avwts_s=fractions_lx(efi), avwtsfld_s='lfrin', &
+                 inst_s=eli, inst_d=eli, inst_w=efi)
     enddo
 
     call t_drvstopf  (trim(timer))

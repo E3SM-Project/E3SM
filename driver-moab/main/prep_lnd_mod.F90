@@ -1,5 +1,7 @@
 module prep_lnd_mod
 
+  use cplcomp_moab_helpers_mod, only: moab_set_tags_all_inst
+  use cplcomp_moab_helpers_mod, only: moab_define_tags
   use shr_kind_mod    , only: R8 => SHR_KIND_R8
   use shr_kind_mod    , only: cs => SHR_KIND_CS
   use shr_kind_mod    , only: cl => SHR_KIND_CL
@@ -405,7 +407,7 @@ contains
             tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
             tagtype = 1 ! dense
             numco = 1 !
-            ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
+            ierr = moab_define_tags(mblxid, tagname, tagtype, numco,  tagindex )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in defining tags for seq_flds_r2x_fields on lnd cpl'
                call shr_sys_abort(subname//' ERROR in  defining tags for seq_flds_r2x_fields on lnd cpl')
@@ -432,7 +434,7 @@ contains
             allocate (tmparray(arrsize)) ! mlsize is the size of local land
             ! do we need to zero out others or just river ?
             tmparray = 0._R8
-            ierr = iMOAB_SetDoubleTagStorage(mblxid, tagname, arrsize , ent_type, tmparray)
+            ierr = moab_set_tags_all_inst(mblxid, tagname, arrsize , ent_type, tmparray)
             if (ierr .ne. 0) then
                write(logunit,*) subname,' cant zero out r2x tags on land'
                call shr_sys_abort(subname//' cant zero out r2x tags on land')
@@ -659,7 +661,7 @@ contains
             tagtype = 1  ! dense, double
             numco = 1 !  one value per vertex / entity
             tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
-            ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
+            ierr = moab_define_tags(mblxid, tagname, tagtype, numco,  tagindex )
             if ( ierr > 0) then
                 call shr_sys_abort(subname//' fail to define seq_flds_a2x_fields for lnd x moab mesh ')
             endif
@@ -914,7 +916,8 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eai = 1,num_inst_atm
        a2x_ax => component_get_c2x_cx(atm(eai))
-       call seq_map_map(mapper_Fa2l, a2x_ax, a2x_lx(eai), norm=.true.)
+       call seq_map_map(mapper_Fa2l, a2x_ax, a2x_lx(eai), norm=.true., &
+            inst_s=eai, inst_d=eai)
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -949,7 +952,8 @@ contains
        ! equivalent r2l mapping in map_lnd2rof_irrig_mod should be changed to keep the two
        ! equivalent.
        call seq_map_map(mapper_Fr2l, r2x_rx, r2x_lx(eri), &
-            fldlist=seq_flds_r2x_fluxes, norm=.true.)
+            fldlist=seq_flds_r2x_fluxes, norm=.true., &
+                 inst_s=eri, inst_d=eri)
 #ifdef MOABDEBUG
        if (mblxid .ge. 0 ) then !  we are on coupler pes, for sure
           write(lnum,"(I0.2)")num_moab_exports
@@ -996,7 +1000,8 @@ contains
        ! BUG(wjs, 2017-05-11, #1516) I think we actually want norm = .false. here, but
        ! this requires some more thought
        call seq_map_map(mapper_Fg2l, g2x_gx, g2x_lx(egi), &
-            fldlist = glc2lnd_non_ec_fields, norm=.true.)
+            fldlist = glc2lnd_non_ec_fields, norm=.true., &
+                 inst_s=egi, inst_d=egi)
 
        ! Map fields that are separated by elevation class on the land grid; the moab
        ! version operates on the coupler mesh tags (result lands directly in the
