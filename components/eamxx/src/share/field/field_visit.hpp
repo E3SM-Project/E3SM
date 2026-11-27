@@ -116,6 +116,62 @@ void visit_field_views (const int rank, Func&& func, const ViewAs<Ts>&... fields
   });
 }
 
+// ===========================================================================
+// Helpers for kernels that are generic in the rank of the views
+// ===========================================================================
+
+// The (rank-N) view of the valid mask of a field, of type const int. If LR is true, the view is
+// LayoutRight (so the mask must allow it, see valid_mask_is_contiguous), otherwise it is LayoutStride.
+template<int N, bool LR>
+auto get_valid_mask_view (const Field& f)
+{
+  using DT = Field::data_nd_t<const int,N>;
+  if constexpr (LR) {
+    return f.get_valid_mask().template get_view<DT>();
+  } else {
+    return f.get_valid_mask().template get_strided_view<DT>();
+  }
+}
+
+// The type of the view above (e.g., to build an empty one for a field that is not masked)
+template<int N, bool LR>
+using valid_mask_view_t = std::decay_t<decltype(get_valid_mask_view<N,LR>(std::declval<const Field&>()))>;
+
+// Whether the valid mask of the field can be read with get_view (true if there is no mask).
+// It cannot if the mask is not contiguous, e.g., if it is a broadcast of a smaller mask.
+inline bool valid_mask_is_contiguous (const Field& f)
+{
+  return not f.has_valid_mask() or
+         f.get_valid_mask().get_header().get_alloc_properties().allows_layout_right();
+}
+
+// Unravel the index idx, in a row-major array with the given dims, into one index per dim
+template<int N>
+KOKKOS_INLINE_FUNCTION
+Kokkos::Array<int,N> unravel (int idx, const Kokkos::Array<int,N>& dims)
+{
+  Kokkos::Array<int,N> indices;
+  for (int k=N-1; k>=0; --k) {
+    indices[k] = idx % dims[k];
+    idx /= dims[k];
+  }
+  return indices;
+}
+
+// v(indices[0],...,indices[M-1]), with M the rank of the view
+template<typename View, int M, std::size_t... S>
+KOKKOS_INLINE_FUNCTION
+decltype(auto) at_impl (const View& v, const Kokkos::Array<int,M>& indices, std::index_sequence<S...>)
+{
+  return v(indices[S]...);
+}
+template<typename View, int M>
+KOKKOS_INLINE_FUNCTION
+decltype(auto) at (const View& v, const Kokkos::Array<int,M>& indices)
+{
+  return at_impl(v,indices,std::make_index_sequence<M>());
+}
+
 } // namespace details
 
 } // namespace scream
