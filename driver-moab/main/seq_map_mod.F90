@@ -339,6 +339,7 @@ contains
     use seq_comm_mct, only : num_moab_exports
     use seq_comm_mct, only : mbaxid, mboxid, mbixid, mb_scm_atm, mb_scm_ocn, mb_scm_ice
     use shr_moab_mod, only : mbGetnCells, mbGetEntityType
+    use t_drv_timers_mod, only : t_mbstartf, t_mbstopf
 
     implicit none
     !-----------------------------------------------------
@@ -379,6 +380,7 @@ contains
     logical :: use_nonlinear_map
     logical :: mbpresent ! moab logical for presence of norm weight string
     integer(IN),save :: ltag    ! message tag for rearrange
+    character(len=64) :: mbtmr   ! base name for MOAB sub-phase timers
     character(len=*),parameter :: subname = "(seq_map_map) "
     !-----------------------------------------------------
 
@@ -400,6 +402,10 @@ contains
     endif
 
     mbnorm = lnorm
+
+    ! Base name for the MOAB sub-phase timers.  mbname is set per mapper in the
+    ! prep_*_mod init routines and defaults to "undefined" in seq_map_mapinit.
+    mbtmr = 'MB:'//trim(adjustl(mapper%mbname))
 
     if (present(avwtsfld_s)) then
        mbpresent = .true.
@@ -520,12 +526,14 @@ contains
           src_ent_type = mbGetEntityType(mapper%src_mbid)
           tgt_ent_type = mbGetEntityType(mapper%tgt_mbid)
           allocate(targtags(lsize_src,nfields))
+          call t_mbstartf(trim(mbtmr)//'_lclcopy')
           ierr = iMOAB_GetDoubleTagStorage(mapper%src_mbid, &
                trim(fldlist_data)//C_NULL_CHAR, lsize_src*nfields, src_ent_type, targtags)
           if (ierr /= 0) call shr_sys_abort(subname//' cannot read SCM source tags')
           ierr = iMOAB_SetDoubleTagStorage(mapper%tgt_mbid, &
                trim(fldlist_data)//C_NULL_CHAR, lsize_tgt*nfields, tgt_ent_type, targtags)
           if (ierr /= 0) call shr_sys_abort(subname//' cannot write SCM target tags')
+          call t_mbstopf(trim(mbtmr)//'_lclcopy')
           deallocate(targtags)
        else if ( valid_moab_context ) then
 #ifdef MOABDEBUG
@@ -541,7 +549,9 @@ contains
           !***   fldlist_moab: Colon-delimited list of tag names to send
           !***   mpicom: MPI communicator
           !***   intx_context: Context ID for the intersection/target app
+          call t_mbstartf(trim(mbtmr)//'_cpsend')
           ierr = iMOAB_SendElementTag( mapper%src_mbid, trim(fldlist_moab)//C_NULL_CHAR, mapper%mpicom, mapper%intx_context );
+          call t_mbstopf(trim(mbtmr)//'_cpsend')
           if (ierr .ne. 0) then
              write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' error in sending tags ', trim(fldlist_moab), ierr
              call shr_sys_flush(logunit)
@@ -553,7 +563,9 @@ contains
           !***   fldlist_moab: Colon-delimited list of tag names to receive
           !***   mpicom: MPI communicator
           !***   src_context: Context ID for the source app
+          call t_mbstartf(trim(mbtmr)//'_cprecv')
           ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, trim(fldlist_moab)//C_NULL_CHAR, mapper%mpicom, mapper%src_context );
+          call t_mbstopf(trim(mbtmr)//'_cprecv')
           if (ierr .ne. 0) then
              write(logunit,*) subname,' error in receiving tags iMOAB mapper ', mapper%mbname,  trim(fldlist_moab)
              call shr_sys_flush(logunit)
@@ -561,7 +573,9 @@ contains
           endif
           !*** MOAB: iMOAB_FreeSenderBuffers - Release MPI send buffers
           !*** Must be called after receive completes to free memory.
+          call t_mbstartf(trim(mbtmr)//'_cpfree')
           ierr = iMOAB_FreeSenderBuffers( mapper%src_mbid, mapper%intx_context )
+          call t_mbstopf(trim(mbtmr)//'_cpfree')
           if (ierr .ne. 0) then
              write(logunit,*) subname,' error in freeing buffers ', trim(fldlist_moab)
              call shr_sys_abort(subname//' ERROR in freeing buffers') ! serious enough
@@ -590,6 +604,7 @@ contains
           !*** MOAB: Pre-normalization setup
           !*** When normalization is requested (mbnorm=.true.) or a weight field
           !*** is provided (mbpresent=.true.), we prepare source data for mapping.
+          call t_mbstartf(trim(mbtmr)//'_prenorm')
           if (mbnorm .or. mbpresent) then
              !*** MOAB: iMOAB_GetMeshInfo - Get source mesh dimensions
              !*** nvise(1) returns the number of visible (owned) elements
@@ -672,11 +687,14 @@ contains
              endif ! end multiplication by norm factor
              deallocate(wghts)
           endif  ! end NORMALIZATION
+          call t_mbstopf(trim(mbtmr)//'_prenorm')
 
           !*** MOAB: Send source data to intersection/coverage mesh
           !*** For full mapping, data goes to the intersection app (intx_context)
           !*** where projection weights will be applied.
+          call t_mbstartf(trim(mbtmr)//'_send')
           ierr = iMOAB_SendElementTag( mapper%src_mbid, trim(fldlist_moab)//C_NULL_CHAR, mapper%mpicom, mapper%intx_context )
+          call t_mbstopf(trim(mbtmr)//'_send')
           if (ierr .ne. 0) then
              write(logunit, *) subname,' iMOAB mapper error in sending tags ', mapper%mbname,  trim(fldlist_moab)
              call shr_sys_flush(logunit)
@@ -695,7 +713,9 @@ contains
                 mapper%mbname, trim(fldlist_moab), ' moab step:', num_moab_exports
           endif
 #endif
+          call t_mbstartf(trim(mbtmr)//'_recv')
           ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, trim(fldlist_moab)//C_NULL_CHAR, mapper%mpicom, mapper%src_context )
+          call t_mbstopf(trim(mbtmr)//'_recv')
           if (ierr .ne. 0) then
              write(logunit,*) subname,' error in receiving tags ', mapper%mbname, 'recv:',  mapper%intx_mbid, trim(fldlist_moab)
              call shr_sys_flush(logunit)
@@ -703,7 +723,9 @@ contains
              !valid_moab_context = .false. ! do not attempt to project
           endif
           !*** MOAB: iMOAB_FreeSenderBuffers - Release MPI send buffers
+          call t_mbstartf(trim(mbtmr)//'_free')
           ierr = iMOAB_FreeSenderBuffers( mapper%src_mbid, mapper%intx_context )
+          call t_mbstopf(trim(mbtmr)//'_free')
           if (ierr .ne. 0) then
              write(logunit,*) subname,' error in freeing buffers ', trim(fldlist_moab)
              call shr_sys_abort(subname//' ERROR in freeing buffers') ! serious enough
@@ -730,8 +752,10 @@ contains
           !***   fldlist_moab: Input and output field names (can be different)
           if(.not.use_nonlinear_map) then
              filter_type = 0 ! CAAS_NONE: plain low-order projection
+             call t_mbstartf(trim(mbtmr)//'_apply')
              ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, trim(mapper%weight_identifier)//C_NULL_CHAR, &
                trim(fldlist_moab)//C_NULL_CHAR, trim(fldlist_moab)//C_NULL_CHAR)
+             call t_mbstopf(trim(mbtmr)//'_apply')
              if (ierr .ne. 0) then
                 write(logunit,*) subname,' error in applying weights '
                 call shr_sys_abort(subname//' ERROR in applying weights')
@@ -766,8 +790,10 @@ contains
 
              if (ncaas_fields > 0) then
                 filter_type = 2 ! CAAS_LOCAL
+                call t_mbstartf(trim(mbtmr)//'_apply_caas')
                 ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, &
                        trim(mapper%howeight_identifier)//C_NULL_CHAR, fldlist_caas, fldlist_caas )
+                call t_mbstopf(trim(mbtmr)//'_apply_caas')
                 if (ierr .ne. 0) then
                    write(logunit,*) subname,' error in applying weights (data fields, dual-map CAAS)'
                    call shr_sys_abort(subname//' ERROR in applying weights (data fields, dual-map CAAS)')
@@ -778,8 +804,10 @@ contains
                 ! Excluded data fields + (optionally) norm8wt — plain low-order.
                 ! iMOAB takes the plain ApplyWeights branch (no dual-map CAAS)
                 filter_type = 0
+                call t_mbstartf(trim(mbtmr)//'_apply_lo')
                 ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, &
                        trim(mapper%weight_identifier)//C_NULL_CHAR, fldlist_lo_only, fldlist_lo_only )
+                call t_mbstopf(trim(mbtmr)//'_apply_lo')
                 if (ierr .ne. 0) then
                    write(logunit,*) subname,' error in applying weights (excluded fields + norm8wt, low-order)'
                    call shr_sys_abort(subname//' ERROR in applying weights (excluded fields + norm8wt, low-order)')
@@ -791,6 +819,7 @@ contains
           !*** After mapping, we need to divide by the mapped normalization weight.
           !*** This completes the conservative mapping: mapped_field / mapped_weight
           !*** gives the properly normalized field value on the target grid.
+          call t_mbstartf(trim(mbtmr)//'_postnorm')
           if (mbnorm) then
              !*** MOAB: Get target mesh dimensions
              ierr  = iMOAB_GetMeshInfo ( mapper%tgt_mbid, nvert, nvise, nbl, nsurf, nvisBC );
@@ -862,6 +891,7 @@ contains
              endif
 
           endif ! end normalization
+          call t_mbstopf(trim(mbtmr)//'_postnorm')
 
           ! Defensive: targtags_ini is allocated under `if (mbpresent)` at line 596 but the
           ! matching deallocate at line 820 sits inside `if (mbnorm)`. If a future caller ever

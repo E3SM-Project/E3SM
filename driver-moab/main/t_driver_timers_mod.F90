@@ -112,4 +112,39 @@ contains
 
   end subroutine t_drvstopf
 
+  !===============================================================================
+  ! MOAB sub-phase timers.
+  !
+  ! These bracket individual iMOAB operations (tag send / receive / free sender
+  ! buffers / apply weights / tag get-set) so the cost of a coupler phase can be
+  ! split into communication versus local work.  They are opened one timing
+  ! detail level below their enclosing phase timer, so they are controlled by
+  ! the existing prof_inparm namelist knob profile_detail_limit: lower it below
+  ! the enclosing phase's detail level to switch them all off without a rebuild.
+  !===============================================================================
+
+  subroutine t_mbstartf(string)
+
+    implicit none
+    character(len=*),intent(in) :: string
+    !-------------------------------------------------------------------------------
+
+    call t_adj_detailf(+1)
+    call t_startf (trim(string))
+
+  end subroutine t_mbstartf
+
+  !===============================================================================
+
+  subroutine t_mbstopf(string)
+
+    implicit none
+    character(len=*),intent(in) :: string
+    !-------------------------------------------------------------------------------
+
+    call t_stopf (trim(string))
+    call t_adj_detailf(-1)
+
+  end subroutine t_mbstopf
+
 end module t_drv_timers_mod

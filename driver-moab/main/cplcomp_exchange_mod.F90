@@ -1405,6 +1405,7 @@ if (single_column .and. .not. scm_multcols) then
     integer :: mpicom_join
     character(CXX)              :: tagname
     character*100 outfile, wopts, lnum
+    character(len=64) :: mbtmr   ! base name for MOAB sub-phase timers
 
     !---------------------------------------------------------------------------
     ! Optional barrier timing for performance analysis
@@ -1442,6 +1443,14 @@ if (single_column .and. .not. scm_multcols) then
         ! Prepare tag name for iMOAB interface (C_NULL_CHAR added at each call site)
         tagName = trim(fields)
 
+       ! Base name for the MOAB sub-phase timers below.  Prefer the caller's
+       ! phase timer so each exchange site gets its own breakdown.
+       if (present(timer_map_exch)) then
+          mbtmr = trim(timer_map_exch)
+       else
+          mbtmr = 'CPL:mbx_'//comp%oneletterid//'_'//trim(direction)
+       endif
+
        !---------------------------------------------------------------------------
        ! Determine source and target IDs based on data flow direction
        ! c2x: component to coupler, x2c: coupler to component
@@ -1475,7 +1484,9 @@ if (single_column .and. .not. scm_multcols) then
        ! Only PEs with valid mbAPPid1 participate in sending
        !---------------------------------------------------------------------------
        if (mbAPPid1 .ge. 0) then !  we are on the sending pes
+           call t_mbstartf(trim(mbtmr)//'_send')
            ierr = iMOAB_SendElementTag(mbAPPid1, trim(tagName)//C_NULL_CHAR, mpicom_join, target_id)
+           call t_mbstopf(trim(mbtmr)//'_send')
           if (ierr .ne. 0) then
              call shr_sys_abort(subname//' cannot send element tag: '//trim(tagName))
           endif
@@ -1486,7 +1497,9 @@ if (single_column .and. .not. scm_multcols) then
        ! Only PEs with valid mbAPPid2 participate in receiving
        !---------------------------------------------------------------------------
        if ( mbAPPid2 .ge. 0 ) then !  we are on receiving end
+           call t_mbstartf(trim(mbtmr)//'_recv')
            ierr = iMOAB_ReceiveElementTag(mbAPPid2, trim(tagName)//C_NULL_CHAR, mpicom_join, source_id)
+           call t_mbstopf(trim(mbtmr)//'_recv')
           if (ierr .ne. 0) then
              call shr_sys_abort(subname//' cannot receive element tag: '//trim(tagName))
           endif
@@ -1497,7 +1510,9 @@ if (single_column .and. .not. scm_multcols) then
        ! Important for large-scale runs to avoid memory buildup
        !---------------------------------------------------------------------------
        if (mbAPPid1 .ge. 0) then
+          call t_mbstartf(trim(mbtmr)//'_free')
           ierr = iMOAB_FreeSenderBuffers(mbAPPid1, target_id)
+          call t_mbstopf(trim(mbtmr)//'_free')
           if (ierr .ne. 0) then
              call shr_sys_abort(subname//' cannot free sender buffers')
           endif
