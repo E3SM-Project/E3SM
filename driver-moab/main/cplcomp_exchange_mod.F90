@@ -1,5 +1,6 @@
 module cplcomp_exchange_mod
 
+  use cplcomp_moab_helpers_mod, only: moab_set_tags_all_inst
   use shr_kind_mod, only: R8 => SHR_KIND_R8, IN=>SHR_KIND_IN
   use shr_kind_mod, only: CL => SHR_KIND_CL, CX => SHR_KIND_CX, CXX => SHR_KIND_CXX
   use shr_sys_mod
@@ -47,6 +48,7 @@ module cplcomp_exchange_mod
   ! Public interfaces
   !--------------------------------------------------------------------------
 
+  public :: cplcomp_moab_init_instance ! connects instances 2..N of a component to the coupler mesh
   public :: cplcomp_moab_Init       ! called to migrate MOAB mesh from
                                     !   component pes to coupler pes
   public :: component_exch_moab
@@ -789,7 +791,7 @@ if (single_column .and. .not. scm_multcols) then
               endif
               allocate(tagValues(arrsize))
               tagValues = 0.0_r8
-              ierr = iMOAB_SetDoubleTagStorage ( mblxid, trim(newlist)//C_NULL_CHAR, arrsize, ent_type, tagValues)
+              ierr = moab_set_tags_all_inst (mblxid, trim(newlist)//C_NULL_CHAR, arrsize, ent_type, tagValues)
               if (ierr .ne. 0) then
                  write(logunit,*) subname,' error in zeroing Flrr tags on land', ierr
                  call shr_sys_abort(subname//' ERROR in zeroing Flrr tags land')
@@ -1233,6 +1235,186 @@ if (single_column .and. .not. scm_multcols) then
 
   end subroutine cplcomp_moab_init_rof
 
+  !-----------------------------------------------------------------------
+  ! Hide (mask=.true.) or restore (mask=.false.) the scalar component app id
+  ! of comp's component type on processes that are not in this instance.
+  !-----------------------------------------------------------------------
+  subroutine cplcomp_moab_mask_comp_apps(comp, mask)
+      type(component_type), intent(in) :: comp
+      logical,              intent(in) :: mask
+      integer, save :: saved_app = -1, saved_app2 = -1
+      logical, save :: masked = .false.
+
+      if (mask) then
+         masked = .false.
+         if (comp%iamin_compid) return
+         masked = .true.
+         select case (comp%oneletterid)
+         case ('a')
+            saved_app = mphaid ; mphaid = -1
+            saved_app2 = mhpgid; mhpgid = -1
+         case ('o')
+            saved_app = mpoid  ; mpoid  = -1
+         case ('l')
+            saved_app = mlnid  ; mlnid  = -1
+         case ('i')
+            saved_app = MPSIID ; MPSIID = -1
+         case ('r')
+            saved_app = mrofid ; mrofid = -1
+         case ('g')
+            saved_app = mbglid ; mbglid = -1
+         case default
+            masked = .false.
+         end select
+      else
+         if (.not. masked) return
+         select case (comp%oneletterid)
+         case ('a')
+            mphaid = saved_app ; mhpgid = saved_app2
+         case ('o')
+            mpoid  = saved_app
+         case ('l')
+            mlnid  = saved_app
+         case ('i')
+            MPSIID = saved_app
+         case ('r')
+            mrofid = saved_app
+         case ('g')
+            mbglid = saved_app
+         end select
+         masked = .false.
+      endif
+  end subroutine cplcomp_moab_mask_comp_apps
+
+  !-----------------------------------------------------------------------
+  ! Instance comp%mbinst > 1 of a component. The coupler mesh of the component
+  ! was created for instance 1 and is shared by all instances (as the MCT
+  ! driver shares dom_cx and gsmap_cx). On the processes of this instance, set
+  ! the MOAB data of comp, and compute the communication graph between the
+  ! instance's component application and the coupler application, matching
+  ! entities by GLOBAL_ID. Entity types and context ids are the ones that
+  ! instance 1 uses for its run-time exchanges (see cplcomp_moab_init_<comp>),
+  ! so component_exch_moab works unchanged. The instance tags on the coupler
+  ! application were defined together with the instance 1 tags
+  ! (moab_define_tags); domain tags are taken from instance 1.
+  ! Called on the processes of comp%cplcompid (component and coupler).
+  !-----------------------------------------------------------------------
+  subroutine cplcomp_moab_init_instance(infodata, comp)
+      use iMOAB, only: iMOAB_GetMeshInfo
+      use seq_infodata_mod, only: seq_infodata_type, seq_infodata_GetData
+      type(seq_infodata_type), intent(in)    :: infodata
+      type(component_type),    intent(inout) :: comp
+
+      integer :: id_old, id_join, mpicom_join, mpigrp_old, mpigrp_cplid, ierr
+      integer :: comp_app, cpl_app, src_context, local_pg, global_pg
+      logical :: dead_comps, single_column, scm_multcols
+      logical :: comp_cells, src_cells, tgt_cells
+      integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+      character(CL) :: ocn_domain, ice_domain
+      character(*), parameter :: subname = '(cplcomp_moab_init_instance) '
+
+      id_old  = comp%compid
+      id_join = comp%cplcompid
+      call seq_comm_getinfo(id_join, mpicom=mpicom_join)
+      call seq_comm_getinfo(id_old,  mpigrp=mpigrp_old)
+      call seq_comm_getinfo(CPLID,   mpigrp=mpigrp_cplid)
+      call seq_infodata_GetData(infodata, dead_comps=dead_comps, ocn_domain=ocn_domain, &
+           ice_domain=ice_domain, single_column=single_column, scm_multcols=scm_multcols)
+
+      comp_app    = -1
+      src_context = id_old
+      select case (comp%oneletterid)
+      case ('a')
+         if (comp%iamin_compid) comp_app = mphaid
+         cpl_app     = mbaxid
+         src_context = cplcomp_moab_atm_phys_cid(id_old)
+         local_pg = 0
+         if (atm_pg_active) local_pg = 1
+         call shr_mpi_max(local_pg, global_pg, mpicom_join, all=.true.)
+         comp_cells = dead_comps
+         src_cells  = dead_comps
+         tgt_cells  = (.not. mb_scm_atm) .and. ((global_pg == 1) .or. dead_comps)
+      case ('o')
+         if (comp%iamin_compid) comp_app = mpoid
+         cpl_app = mboxid
+         if (trim(ocn_domain) == 'none') then        ! migrated mesh of an active ocean
+            comp_cells = .true.
+            src_cells  = .true.
+            tgt_cells  = .true.
+         else if (single_column .or. scm_multcols) then
+            comp_cells = .false.
+            src_cells  = .false.
+            tgt_cells  = .false.
+         else                                         ! data ocean, coupler mesh read from file
+            comp_cells = .false.
+            src_cells  = dead_comps
+            tgt_cells  = .true.
+         endif
+      case ('i')
+         if (comp%iamin_compid) comp_app = MPSIID
+         cpl_app = mbixid
+         if (trim(ice_domain) == 'none') then        ! migrated mesh of an active sea ice
+            comp_cells = .true.
+            src_cells  = .true.
+            tgt_cells  = .true.
+         else if (single_column .or. scm_multcols) then
+            comp_cells = .false.
+            src_cells  = .false.
+            tgt_cells  = .false.
+         else                                         ! data ice, coupler mesh read from file
+            comp_cells = .false.
+            src_cells  = dead_comps
+            tgt_cells  = .true.
+         endif
+      case ('l')
+         if (comp%iamin_compid) comp_app = mlnid
+         cpl_app    = mblxid
+         comp_cells = dead_comps
+         if (mb_scm_land) then
+            src_cells = dead_comps
+            tgt_cells = dead_comps
+         else
+            src_cells = dead_comps
+            tgt_cells = .true.
+         endif
+      case ('r')
+         if (comp%iamin_compid) comp_app = mrofid
+         cpl_app    = mbrxid
+         comp_cells = dead_comps
+         src_cells  = dead_comps
+         tgt_cells  = .true.
+      case ('g')
+         if (comp%iamin_compid) comp_app = mbglid
+         cpl_app    = mbgxid
+         comp_cells = .true.
+         src_cells  = .true.
+         tgt_cells  = .true.
+      case default
+         return
+      end select
+
+      if (seq_comm_iamroot(CPLID)) then
+         write(logunit,'(A,I4)') subname//'MOAB coupling for '//comp%ntype//' instance ', comp%mbinst
+      endif
+
+      if (comp_app >= 0) then
+         ierr = iMOAB_GetMeshInfo(comp_app, nvert, nvise, nbl, nsurf, nvisBC)
+         if (ierr /= 0) call shr_sys_abort(subname//' cannot get mesh info of '//trim(comp%name))
+         comp%mbApCCid = comp_app
+         if (comp_cells) then
+            comp%mbGridType = 1
+            comp%mblsize    = nvise(1)
+         else
+            comp%mbGridType = 0
+            comp%mblsize    = nvert(1)
+         endif
+      endif
+
+      call cplcomp_moab_compute_comm_graph(comp_app, cpl_app, mpicom_join, mpigrp_old, mpigrp_cplid, &
+           src_cells, tgt_cells, src_context, id_join, subname, trim(comp%name))
+
+  end subroutine cplcomp_moab_init_instance
+
    subroutine cplcomp_moab_Init(infodata,comp)
 
       ! This routine initializes iMOAB applications for each component,
@@ -1289,6 +1471,14 @@ if (single_column .and. .not. scm_multcols) then
       call seq_infodata_GetData(infodata,dead_comps=dead_comps)
       mb_dead_comps = dead_comps
 
+      ! With several instances of a component, a process of another instance
+      ! holds that instance's application in the scalar component app ids
+      ! (mphaid, mpoid, ...). iMOAB selects the participants of a communication
+      ! graph or tag exchange by app id >= 0, so hide those ids on processes
+      ! outside this instance while its coupler mesh is set up.
+      ! With one instance this changes nothing.
+      call cplcomp_moab_mask_comp_apps(comp, .true.)
+
 !!!!!!!!!!!!!!!! ATMOSPHERE
       if ( comp%oneletterid == 'a' .and. maxMH /= -1) then
          call cplcomp_moab_init_atm(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
@@ -1319,6 +1509,8 @@ if (single_column .and. .not. scm_multcols) then
       if (comp%oneletterid == 'g'  .and. maxMGID /= -1) then
          call cplcomp_moab_init_glc(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
       endif ! end for glc coupler set up
+
+      call cplcomp_moab_mask_comp_apps(comp, .false.)
 
    end subroutine cplcomp_moab_Init
 
@@ -1375,10 +1567,11 @@ if (single_column .and. .not. scm_multcols) then
   !===============================================================================
   subroutine component_exch_moab(comp, mbAPPid1, mbAppid2, direction, fields, context_exch, &
        infodata, infodata_string, mpicom_barrier, run_barriers, &
-       timer_barrier, timer_comp_exch, timer_map_exch, timer_infodata_exch)
+       timer_barrier, timer_comp_exch, timer_map_exch, timer_infodata_exch, cpl_fields)
 
    use iMOAB ,  only: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_WriteMesh, iMOAB_FreeSenderBuffers
    use seq_comm_mct, only :  num_moab_exports ! for debugging
+   use seq_comm_mct, only :  seq_comm_mbinst_tags, seq_comm_mbinst_suffix
    use ISO_C_BINDING, only : C_NULL_CHAR
    use shr_kind_mod      , only :  CXX => shr_kind_CXX
    use seq_infodata_mod, only: seq_infodata_exchange, seq_infodata_type
@@ -1399,11 +1592,17 @@ if (single_column .and. .not. scm_multcols) then
     character(len=*)        , intent(in), optional :: timer_comp_exch
     character(len=*)        , intent(in), optional :: timer_map_exch
     character(len=*)        , intent(in), optional :: timer_infodata_exch
+    ! Tag names on the coupler application. By default they are the instance tags
+    ! of fields (seq_comm_mbinst_tags(fields, comp%mbinst)); pass cpl_fields for
+    ! instance-independent coupler tags such as the coupler aream.
+    character(len=*)        , intent(in), optional :: cpl_fields
 
     character(*), parameter :: subname = '(component_exch_moab)'
     integer :: id_join, source_id, target_id, ierr
     integer :: mpicom_join
     character(CXX)              :: tagname
+    character(CXX)              :: tagname_cpl   ! tag names on the coupler application
+    character(CXX)              :: tagname_send, tagname_recv
     character*100 outfile, wopts, lnum
 
     !---------------------------------------------------------------------------
@@ -1441,6 +1640,11 @@ if (single_column .and. .not. scm_multcols) then
 
         ! Prepare tag name for iMOAB interface (C_NULL_CHAR added at each call site)
         tagName = trim(fields)
+        if (present(cpl_fields)) then
+           tagname_cpl = trim(cpl_fields)
+        else
+           tagname_cpl = seq_comm_mbinst_tags(trim(fields), comp%mbinst)
+        endif
 
        !---------------------------------------------------------------------------
        ! Determine source and target IDs based on data flow direction
@@ -1455,6 +1659,15 @@ if (single_column .and. .not. scm_multcols) then
        else
           call shr_sys_abort(subname//' invalid direction in component_exch_moab: '// &
      &                         trim(direction))
+       endif
+       ! the component side always uses the plain field names; the coupler side
+       ! holds the tags of this instance
+       if (direction .eq. 'c2x') then
+          tagname_send = tagName
+          tagname_recv = tagname_cpl
+       else
+          tagname_send = tagname_cpl
+          tagname_recv = tagName
        endif
 
        !---------------------------------------------------------------------------
@@ -1475,9 +1688,9 @@ if (single_column .and. .not. scm_multcols) then
        ! Only PEs with valid mbAPPid1 participate in sending
        !---------------------------------------------------------------------------
        if (mbAPPid1 .ge. 0) then !  we are on the sending pes
-           ierr = iMOAB_SendElementTag(mbAPPid1, trim(tagName)//C_NULL_CHAR, mpicom_join, target_id)
+           ierr = iMOAB_SendElementTag(mbAPPid1, trim(tagname_send)//C_NULL_CHAR, mpicom_join, target_id)
           if (ierr .ne. 0) then
-             call shr_sys_abort(subname//' cannot send element tag: '//trim(tagName))
+             call shr_sys_abort(subname//' cannot send element tag: '//trim(tagname_send))
           endif
        endif
 
@@ -1486,9 +1699,9 @@ if (single_column .and. .not. scm_multcols) then
        ! Only PEs with valid mbAPPid2 participate in receiving
        !---------------------------------------------------------------------------
        if ( mbAPPid2 .ge. 0 ) then !  we are on receiving end
-           ierr = iMOAB_ReceiveElementTag(mbAPPid2, trim(tagName)//C_NULL_CHAR, mpicom_join, source_id)
+           ierr = iMOAB_ReceiveElementTag(mbAPPid2, trim(tagname_recv)//C_NULL_CHAR, mpicom_join, source_id)
           if (ierr .ne. 0) then
-             call shr_sys_abort(subname//' cannot receive element tag: '//trim(tagName))
+             call shr_sys_abort(subname//' cannot receive element tag: '//trim(tagname_recv))
           endif
        endif
 
@@ -1521,7 +1734,8 @@ if (single_column .and. .not. scm_multcols) then
        end if
     end if
 
-    if (present(infodata) .and. present(infodata_string)) then
+    ! as in the MCT driver, infodata is exchanged with the first instance only
+    if (present(infodata) .and. present(infodata_string) .and. comp%mbinst == 1) then
        if (direction == 'c2x') then  ! component to coupler
           if (comp%iamin_cplcompid) then
              call seq_infodata_exchange(infodata, comp%cplcompid, trim(infodata_string))
@@ -1559,9 +1773,9 @@ if (single_column .and. .not. scm_multcols) then
     ! Write received mesh data to HDF5 file for visualization/debugging
     if (mbAPPid2 .ge. 0 ) then !  we are on receiving pes, for sure
       if (present(context_exch)) then
-         outfile = comp%ntype//'_'//trim(context_exch)//'_'//trim(direction)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+         outfile = comp%ntype//trim(seq_comm_mbinst_suffix(comp%mbinst))//'_'//trim(context_exch)//'_'//trim(direction)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       else
-         outfile = comp%ntype//'_'//trim(direction)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+         outfile = comp%ntype//trim(seq_comm_mbinst_suffix(comp%mbinst))//'_'//trim(direction)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       endif
       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(mbAPPid2, trim(outfile), trim(wopts))

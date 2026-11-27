@@ -126,6 +126,7 @@ contains
        comp(eci)%suffix             =  seq_comm_suffix(comp(eci)%compid)
        comp(eci)%name               =  seq_comm_name  (comp(eci)%compid)
        comp(eci)%ntype              =  ntype(1:3)
+       comp(eci)%mbinst             =  eci
 
        select case(ntype)
        case ('atm','cpl','ocn','wav','glc','ice','rof','lnd','esp')
@@ -334,7 +335,7 @@ contains
     !---------------------------------------------------------------
     ! Uses
     use cplcomp_exchange_mod, only: seq_mctext_avCreate
-    use cplcomp_exchange_mod, only: cplcomp_moab_Init
+    use cplcomp_exchange_mod, only: cplcomp_moab_Init, cplcomp_moab_init_instance
     use seq_domain_mct,       only: seq_domain_compare
     use mct_mod,              only: mct_ggrid_clean
     !
@@ -375,6 +376,9 @@ contains
                    call shr_sys_flush(logunit)
                 end if
                 call cplcomp_moab_Init(infodata,comp(1))
+             else
+                ! instances 2..N share the coupler mesh of instance 1
+                call cplcomp_moab_init_instance(infodata,comp(eci))
              endif
 
              ! Create x2c_cx and c2x_cx
@@ -598,19 +602,24 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
    character(len=*),parameter :: F0R = "(2A,2g25.17,A )"
    !---------------------------------------------------------------
 
-   if (comp(1)%iamin_cplcompid) then
+   ! mbccid is the component app id of the instance on this process; every
+   ! instance uses its own app comp(eci)%mbApCCid (-1 off its processes), and
+   ! the instance-independent coupler aream of the shared coupler mesh.
+   do eci = 1, size(comp)
+   if (comp(eci)%iamin_cplcompid) then
       tagname='aream'//C_NULL_CHAR
       ! bring on the comp side the aream from maps
       ! (it is either computed by mapping routine or read from mapping files)
-      call component_exch_moab(comp(1), mbcxid, mbccid, 'x2c', tagname, context_exch='aream')
+      call component_exch_moab(comp(eci), mbcxid, comp(eci)%mbApCCid, 'x2c', tagname, context_exch='aream', &
+           cpl_fields=tagname)
 
       ! For only component pes
-      if (comp(1)%iamin_compid) then
+      if (comp(eci)%iamin_compid) then
          ! Allocate and initialize area correction factors on component processes
          ! get areas, first allocate memory
          ! Side Note:: !!! TODO mblsize on component side is always the size of comp domain for mct, too
          ! that is the whole point, we are using the same order, and the same grid size as mct driver
-         lsize = comp(1)%mblsize
+         lsize = comp(eci)%mblsize
          allocate(areas (lsize, 3)) ! lsize is along grid; read mask too
          allocate(factors (lsize, 2))
 
@@ -618,7 +627,7 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
          ! get areas
          tagname='area:aream:mask'//C_NULL_CHAR
          arrsize = 3 * lsize
-         ierr = iMOAB_GetDoubleTagStorage ( mbccid, tagname, arrsize , comp(1)%mbGridType, areas(1,1) )
+         ierr = iMOAB_GetDoubleTagStorage ( comp(eci)%mbApCCid, tagname, arrsize , comp(eci)%mbGridType, areas(1,1) )
          if (ierr .ne. 0) then
            call shr_sys_abort(subname//' cannot get areas  ')
          endif
@@ -647,12 +656,12 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
          tagname = 'mdl2drv:drv2mdl'//C_NULL_CHAR
          tagtype = 1
          numco = 1
-         ierr = iMOAB_DefineTagStorage(mbccid, tagname, tagtype, numco,  tagindex )
+         ierr = iMOAB_DefineTagStorage(comp(eci)%mbApCCid, tagname, tagtype, numco,  tagindex )
          if (ierr .ne. 0) then
            call shr_sys_abort(subname//' cannot define correction tags')
          endif
          arrsize = 2 * lsize
-         ierr = iMOAB_SetDoubleTagStorage( mbccid, tagname, arrsize , comp(1)%mbGridType, factors(1,1))
+         ierr = iMOAB_SetDoubleTagStorage( comp(eci)%mbApCCid, tagname, arrsize , comp(eci)%mbGridType, factors(1,1))
          if (ierr .ne. 0) then
            call shr_sys_abort(subname//' cannot set correction area factors  ')
          endif
@@ -660,11 +669,11 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
 ! print the computed values for area factors
          rmin1 = minval(factors(:,1))
          rmax1 = maxval(factors(:,1))
-         mpicom = comp(1)%mpicom_compid
-         iamroot= comp(1)%iamroot_compid
+         mpicom = comp(eci)%mpicom_compid
+         iamroot= comp(eci)%iamroot_compid
          call shr_mpi_min(rmin1,rmin,mpicom)
          call shr_mpi_max(rmax1,rmax,mpicom)
-         comment = 'areafact_'//trim(comp(1)%name)
+         comment = 'areafact_'//trim(comp(eci)%name)
          if (iamroot) write(logunit,F0R) trim(subname),' : min/max mdl2drv ',rmin,rmax,trim(comment)
 
          rmin1 = minval(factors(:,2))
@@ -682,11 +691,11 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
          nfields=mct_list_nitem (temp_list)
          call mct_list_clean(temp_list)
 
-         lsize = comp(1)%mblsize
+         lsize = comp(eci)%mblsize
          allocate(vals(lsize, nfields))
          tagname = trim(seq_flds_c2x_fluxes)//C_NULL_CHAR
          arrsize = lsize * nfields
-         ierr = iMOAB_GetDoubleTagStorage( mbccid, tagname, arrsize, comp(1)%mbGridType, vals(1,1) )
+         ierr = iMOAB_GetDoubleTagStorage( comp(eci)%mbApCCid, tagname, arrsize, comp(eci)%mbGridType, vals(1,1) )
          if (ierr .ne. 0) then
            call shr_sys_abort(subname//' cannot get flux values:  '//tagname)
          endif
@@ -700,7 +709,7 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
                enddo
             endif
          enddo
-         ierr = iMOAB_SetDoubleTagStorage( mbccid, tagname, arrsize, comp(1)%mbGridType, vals(1,1))
+         ierr = iMOAB_SetDoubleTagStorage( comp(eci)%mbApCCid, tagname, arrsize, comp(eci)%mbGridType, vals(1,1))
          if (ierr .ne. 0) then
             call shr_sys_abort(subname//' cannot set new flux values  ')
          endif
@@ -711,8 +720,9 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
 
       endif
       ! send area corrected data to coupler.
-      call component_exch_moab(comp(1), mbccid, mbcxid, 'c2x', seq_flds_c2x_fields, context_exch='aftareacor')
+      call component_exch_moab(comp(eci), comp(eci)%mbApCCid, mbcxid, 'c2x', seq_flds_c2x_fields, context_exch='aftareacor')
    endif
+   enddo ! eci
 
   end subroutine component_init_areacor_moab
   !===============================================================================
