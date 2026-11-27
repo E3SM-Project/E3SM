@@ -15,6 +15,7 @@ module CanopyFluxesMod
   use abortutils            , only : endrun
   use elm_varctl            , only : iulog, use_cn, use_lch4, use_c13, use_c14, use_fates
   use elm_varctl            , only : use_hydrstress, use_finetop_rad
+  use elm_varctl            , only : irrig_length_hours
   use elm_varpar            , only : nlevgrnd, nlevsno
   use elm_varcon            , only : namep
   use elm_varcon            , only : mm_epsilon
@@ -151,7 +152,8 @@ contains
     ! differ if this is not a multiple of dtime. Irrigation won't work properly
     ! if dtime > secsperday
 
-    integer , parameter :: irrig_length = isecspday/6     ! 4 hours irrigation
+    ! Set by namelist irrig_length_hours (1-18, default 4 = the previous fixed value)
+    integer  :: irrig_length                              ! seconds of irrigation per day
 
     ! Determines target soil moisture level for irrigation. If h2osoi_liq_so
     ! is the soil moisture level at which stomata are fully open and
@@ -473,6 +475,7 @@ contains
       !yr = year_curr; mon = mon_curr; day = day_curr;
       time = secs_curr;
 
+      irrig_length = irrig_length_hours * 3600
       irrig_nsteps_per_day = ((irrig_length + (dtime - 1))/dtime)  ! round up
       ! First - set the following values over points where frac vegetation covered by snow is zero
       ! (e.g. btran, t_veg, rootr, rresis)

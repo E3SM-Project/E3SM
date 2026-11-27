@@ -208,6 +208,12 @@ Only effective when tw_irr is TRUE. If TRUE, extra groundwater pumping will be p
 surface water irrigation supply will still be constrained by surface water availability from MOSART
 </entry>
 
+<entry id="irrig_length_hours" type="integer" category="elm_physics"
+       group="elm_inparm" valid_values="" >
+Hours per day over which the daily irrigation amount is applied, starting at 6 AM local time.
+Whole number from 1 to 18 (18 ends at local midnight). Default: 4.
+</entry>
+
 <entry id="fossil_irrig_file" type="char*256" category="datasets"
        group="elm_inparm" valid_values="" >
 File with the time-varying share of irrigation demand met from non-renewable (fossil) groundwater:

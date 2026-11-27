@@ -144,6 +144,9 @@ module elm_varctl
   ! groundwater, variable F_NONREN(time,lsmlat,lsmlon); blank = no fossil water
   character(len=fname_len), public :: fossil_irrig_file = ' '
 
+  ! hours per day over which the daily irrigation amount is applied, starting at 6 AM local time (1-18)
+  integer, public :: irrig_length_hours = 4
+
   !----------------------------------------------------------
   ! FIRRIG data
   !----------------------------------------------------------
