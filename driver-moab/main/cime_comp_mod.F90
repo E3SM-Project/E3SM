@@ -1030,8 +1030,9 @@ contains
        write(logunit,'(2A)') subname,' Using esmf_wrf_timemgr'
        write(logunit,'(2A)') subname,' CPL7-MOAB interface is set'
        if (num_inst_driver > 1) then
-            write(logunit,'(2A,I0,A)') subname,' driver-moab does not yet support multi-driver'
-            call shr_sys_abort( subname//':: Multi-driver not supported')
+            ! each driver instance has its own coupler and its own iMOAB
+            ! applications on disjoint processes; file names carry cpl_inst_tag
+            write(logunit,'(2A,I0)') subname,' driver-moab multi-driver, number of drivers = ', num_inst_driver
        endif
     endif
 
