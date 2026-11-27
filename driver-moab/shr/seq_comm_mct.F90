@@ -51,6 +51,8 @@ module seq_comm_mct
   public seq_comm_name
   public seq_comm_inst
   public seq_comm_suffix
+  public seq_comm_mbinst_suffix  ! tag-name suffix of a component instance in the MOAB coupler
+  public seq_comm_mbinst_tags    ! colon-separated tag list with that suffix applied
   public seq_comm_setptrs
   public seq_comm_setnthreads
   public seq_comm_getnthreads
@@ -1566,6 +1568,92 @@ contains
     end if
 
   end function seq_comm_suffix
+
+  !---------------------------------------------------------
+  ! MOAB multi-instance tag names.
+  ! The MOAB coupler keeps one coupler mesh (iMOAB application) per component
+  ! and stores the fields of instance k on that mesh under the tag names of
+  ! instance 1 followed by '_000k' (instance 1 keeps the plain names, so a
+  ! single-instance run is unchanged). The mapping normalization tag norm8wt
+  ! is temporary storage shared by all instances and is never suffixed.
+  !---------------------------------------------------------
+  function seq_comm_mbinst_suffix(inst) result(sfx)
+
+    implicit none
+    integer, intent(in) :: inst
+    character(len=8)    :: sfx
+
+    sfx = ''
+    if (inst > 1) write(sfx,'(a,i4.4)') '_', inst
+
+  end function seq_comm_mbinst_suffix
+  !---------------------------------------------------------
+  function seq_comm_mbinst_tags(tags, inst) result(itags)
+
+    use shr_kind_mod, only: CXX => shr_kind_CXX
+    implicit none
+    character(len=*), intent(in) :: tags   ! colon-separated tag names, optionally ending with C_NULL_CHAR
+    integer,          intent(in) :: inst   ! instance index (1 = no suffix)
+    character(len=CXX)           :: itags
+
+    character(len=8)  :: sfx
+    character(len=CXX) :: name
+    integer :: n, i0, i1, lsfx, lout, ltags
+    logical :: nullterm
+    character(*),parameter :: subName = '(seq_comm_mbinst_tags) '
+
+    ltags = len_trim(tags)
+    nullterm = .false.
+    if (ltags > 0) then
+       if (tags(ltags:ltags) == achar(0)) then
+          nullterm = .true.
+          ltags = ltags - 1
+       endif
+    endif
+
+    if (inst <= 1 .or. ltags == 0) then
+       itags = tags
+       return
+    endif
+
+    sfx  = seq_comm_mbinst_suffix(inst)
+    lsfx = len_trim(sfx)
+    itags = ''
+    lout = 0
+    i0 = 1
+    do while (i0 <= ltags)
+       i1 = index(tags(i0:ltags), ':')
+       if (i1 == 0) then
+          i1 = ltags + 1
+       else
+          i1 = i0 + i1 - 1
+       endif
+       name = adjustl(tags(i0:i1-1))
+       n = len_trim(name)
+       if (n > 0) then
+          if (lout > 0) then
+             lout = lout + 1
+             if (lout > len(itags)) call shr_sys_abort(subName//'tag list too long for '//trim(sfx))
+             itags(lout:lout) = ':'
+          endif
+          if (trim(name) == 'norm8wt') then
+             if (lout + n > len(itags)) call shr_sys_abort(subName//'tag list too long for '//trim(sfx))
+             itags(lout+1:lout+n) = name(1:n)
+             lout = lout + n
+          else
+             if (lout + n + lsfx > len(itags)) call shr_sys_abort(subName//'tag list too long for '//trim(sfx))
+             itags(lout+1:lout+n+lsfx) = name(1:n)//sfx(1:lsfx)
+             lout = lout + n + lsfx
+          endif
+       endif
+       i0 = i1 + 1
+    enddo
+    if (nullterm) then
+       if (lout + 1 > len(itags)) call shr_sys_abort(subName//'tag list too long for '//trim(sfx))
+       itags(lout+1:lout+1) = achar(0)
+    endif
+
+  end function seq_comm_mbinst_tags
   !---------------------------------------------------------
   !---------------------------------------------------------
   integer function seq_comm_inst(ID)

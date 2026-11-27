@@ -10,6 +10,8 @@ module cplcomp_moab_helpers_mod
   public :: moab_register_app
   public :: moab_define_global_id_tag
   public :: moab_define_double_tag
+  public :: moab_define_tags        ! iMOAB_DefineTagStorage on a coupler app, for every component instance
+  public :: moab_set_tags_all_inst  ! iMOAB_SetDoubleTagStorage of the same values for every component instance
   public :: moab_load_mesh
   public :: moab_send_mesh
   public :: moab_receive_mesh
@@ -57,7 +59,6 @@ contains
   end subroutine moab_define_global_id_tag
 
   subroutine moab_define_double_tag(appid, tagname_in, subctx)
-    use iMOAB, only: iMOAB_DefineTagStorage
 
     integer, intent(in) :: appid
     character(len=*), intent(in) :: tagname_in
@@ -73,11 +74,65 @@ contains
     numco = 1
     tagname = trim(tagname_in)//C_NULL_CHAR
 
-    ierr = iMOAB_DefineTagStorage(appid, tagname, tagtype, numco, tagindex)
+    ierr = moab_define_tags(appid, tagname, tagtype, numco, tagindex)
     if (ierr /= 0) then
       call shr_sys_abort(trim(subctx)//' ERROR defining tag '//trim(tagname_in))
     end if
   end subroutine moab_define_double_tag
+
+  !---------------------------------------------------------------------------
+  ! Same arguments and return code as iMOAB_DefineTagStorage. Use it for tags on
+  ! coupler applications: besides the given (instance 1) tags it defines the
+  ! tags of instances 2..num_inst_max (see seq_comm_mbinst_tags), so that
+  ! Get/SetDoubleTagStorage can address the data of every instance on the one
+  ! coupler mesh. With a single instance it is identical to iMOAB_DefineTagStorage.
+  ! tagindex returns the index of the first instance 1 tag.
+  !---------------------------------------------------------------------------
+  integer function moab_define_tags(appid, tagname, tagtype, numco, tagindex) result(ierr)
+    use iMOAB, only: iMOAB_DefineTagStorage
+    use seq_comm_mct, only: num_inst_max, seq_comm_mbinst_tags
+
+    integer, intent(in) :: appid
+    character(len=*), intent(in) :: tagname   ! colon-separated names, C_NULL_CHAR terminated
+    integer, intent(in) :: tagtype, numco
+    integer, intent(out) :: tagindex
+
+    integer :: k, tagindex_k
+    character(CXX) :: tagname_k
+
+    ierr = iMOAB_DefineTagStorage(appid, tagname, tagtype, numco, tagindex)
+    if (ierr /= 0) return
+    do k = 2, num_inst_max
+       tagname_k = seq_comm_mbinst_tags(tagname, k)
+       ierr = iMOAB_DefineTagStorage(appid, tagname_k, tagtype, numco, tagindex_k)
+       if (ierr /= 0) return
+    enddo
+  end function moab_define_tags
+
+  !---------------------------------------------------------------------------
+  ! Same arguments and return code as iMOAB_SetDoubleTagStorage. Sets the same
+  ! values on the given (instance 1) tags and on the tags of instances
+  ! 2..num_inst_max; used for initial values of coupler fields.
+  !---------------------------------------------------------------------------
+  integer function moab_set_tags_all_inst(appid, tagname, arrsize, ent_type, values) result(ierr)
+    use iMOAB, only: iMOAB_SetDoubleTagStorage
+    use seq_comm_mct, only: num_inst_max, seq_comm_mbinst_tags
+    use shr_kind_mod, only: R8 => SHR_KIND_R8
+
+    integer, intent(in) :: appid
+    character(len=*), intent(in) :: tagname   ! colon-separated names, C_NULL_CHAR terminated
+    integer, intent(in) :: arrsize, ent_type
+    real(R8), intent(in) :: values(*)
+
+    integer :: k
+    character(CXX) :: tagname_k
+
+    do k = 1, num_inst_max
+       tagname_k = seq_comm_mbinst_tags(tagname, k)
+       ierr = iMOAB_SetDoubleTagStorage(appid, tagname_k, arrsize, ent_type, values)
+       if (ierr /= 0) return
+    enddo
+  end function moab_set_tags_all_inst
 
   subroutine moab_load_mesh(appid, infile, ropts, nghlay, subctx)
     use iMOAB, only: iMOAB_LoadMesh
