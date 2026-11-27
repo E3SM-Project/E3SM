@@ -7,6 +7,9 @@ driver_options:
   column_conservation_checks_fail_handling_type: warning
   property_check_data_fields: [phis]
 
+e3sm_parameters:
+  e3sm_casename: ${EAMXX_TEST_CASENAME}
+
 time_stepping:
   time_step: ${ATM_TIME_STEP}
   run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX

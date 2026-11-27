@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: eamxx_output.decadal.4hourlyAVG_coarse.h
+stream_name: eamxx_output.decadal.4hourlyAVG_coarse.h
 iotype: pnetcdf
 averaging_type: average
 max_snapshots_per_file: 1 # only one snapshot per file

@@ -35,6 +35,14 @@ std::string eamxx_config_string() {
   return config;
 }
 
+// Default model name for EAMxx output files
+std::string eamxx_model_name() {
+  // Set the default name to "eamxx".
+  // TODO: Let this string be defined by component coupler.
+  constexpr const char* EAMXX_MODEL_NAME_DEFAULT = "eamxx";
+  return std::string(EAMXX_MODEL_NAME_DEFAULT);
+}
+
 bool& use_leap_year_impl () {
 #ifdef SCREAM_HAS_LEAP_YEAR
   static bool use_leap = true;

@@ -66,6 +66,7 @@ for file in ${output_yaml_files[@]}; do
     $atmchange -b output_yaml_files+="./$(basename ${file})"
     # Replace horiz remap file
     sed -i "s|horiz_remap_file:.*|horiz_remap_file: ${mapfile}|" ./$(basename ${file})
-    # Replace all filename prefixes so that st_archive works...
-    sed -i "s|eamxx_output.decadal|${case_name}.scream|" ./$(basename ${file})
+    # Replace the common stream_name prefix with a short one. The case name must NOT be
+    # part of the stream name, since it is already in the file name (PIO limits it to 256 chars)
+    sed -i "s|eamxx_output.decadal|scream|" ./$(basename ${file})
 done

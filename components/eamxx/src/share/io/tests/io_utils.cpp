@@ -26,30 +26,41 @@ TEST_CASE ("find_filename_in_rpointer") {
   bar2_c.frequency = 6; bar2_c.frequency_units = "nhours";
 
   std::string suffix = ".np" + std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
-  std::string foo_fname  = "foo.r.INSTANT.nsteps_x3"     + suffix;
-  std::string bar_fname  = "bar.rhist.AVERAGE.ndays_x1"  + suffix;
-  std::string bar2_fname = "bar.rhist.AVERAGE.nhours_x6" + suffix;
+  // File naming: eamxx.{r|rh}[.{stream_name}].{output_spec}.{date_spec}.nc (no case name for unit tests)
+  std::string foo_fname  = "eamxx.r.INSTANT.nsteps_x3"    + suffix;
+  std::string bar_fname  = "eamxx.rh.bar.AVERAGE.ndays_x1"  + suffix;
+  std::string bar2_fname = "eamxx.rh.bar.AVERAGE.nhours_x6" + suffix;
 
+  std::string dot_fname  = "eamxx.rh.my.stream-v1.AVERAGE.ndays_x1" + suffix;
   rpointer << foo_fname<< "\n";
+  rpointer << dot_fname<< "\n";
   rpointer << bar_fname<< "\n";
   rpointer << bar2_fname << "\n";
   rpointer.close();
 
   // Now test find_filename_in_rpointer with different inputs
-  REQUIRE_THROWS (find_filename_in_rpointer("baz",false,comm,t0,false,AVG)); // missing control (needed for rhist files)
-  REQUIRE_THROWS (find_filename_in_rpointer("baz",false,comm,t0,false,AVG,bar_c)); // wrong prefix
-  REQUIRE_THROWS (find_filename_in_rpointer("bar",false,comm,t1,false,AVG,bar_c)); // wrong timestamp
-  REQUIRE_THROWS (find_filename_in_rpointer("bar",true, comm,t0,false,AVG,bar_c)); // bar is not model restart
-  REQUIRE_THROWS (find_filename_in_rpointer("bar",false,comm,t0,false,INST,bar_c)); // wrong avg type
-  REQUIRE_THROWS (find_filename_in_rpointer("bar",false,comm,t0,false,INST,bar2_c)); // wrong freq specs
-  REQUIRE_THROWS (find_filename_in_rpointer("foo",false,comm,t0,false,INST,foo_c)); // foo is model restart
-  REQUIRE_THROWS (find_filename_in_rpointer("foo",true, comm,t0,false,AVG)); // model restart MUST be INSTANT
-  auto not_found = find_filename_in_rpointer("bar",false,comm,t0,true,INST,bar2_c); // Allowed to not find it
-  REQUIRE (not_found=="");
+  // Note: prefix is [<case>.]eamxx; stream_name is only needed for history restart files
+  auto f = [&](const std::string& stream, bool model_rest, const util::TimeStamp& t,
+               bool allow_nf, OutputAvgType avg, const IOControl& c) {
+    return find_filename_in_rpointer("eamxx",model_rest,comm,t,allow_nf,avg,c,stream);
+  };
+  REQUIRE_THROWS (find_filename_in_rpointer("eamxx",false,comm,t0,false,AVG,IOControl(),"bar")); // missing control (needed for rhist files)
+  REQUIRE_THROWS (find_filename_in_rpointer("eamxx",false,comm,t0,false,AVG,bar_c)); // missing stream name (needed for rhist files)
+  REQUIRE_THROWS (f("baz",false,t0,false,AVG,bar_c));  // wrong stream
+  REQUIRE_THROWS (f("ba",false,t0,false,AVG,bar_c));   // stream is only a prefix of the real one
+  REQUIRE_THROWS (f("bar",false,t1,false,AVG,bar_c));  // wrong timestamp
+  REQUIRE_THROWS (f("bar",true, t0,false,AVG,bar_c));  // bar is not model restart
+  REQUIRE_THROWS (f("bar",false,t0,false,INST,bar_c)); // wrong avg type
+  REQUIRE_THROWS (f("bar",false,t0,false,INST,bar2_c));// wrong freq specs
+  REQUIRE_THROWS (f("bar",false,t0,false,INST,foo_c)); // foo is model restart
+  REQUIRE_THROWS (f("",   true, t0,false,AVG,IOControl())); // model restart MUST be INSTANT
+  REQUIRE (f("bar",false,t0,true,INST,bar2_c)==""); // Allowed to not find it
 
-  REQUIRE (find_filename_in_rpointer("bar",false,comm,t0,false,AVG,bar_c)==bar_fname);
-  REQUIRE (find_filename_in_rpointer("bar",false,comm,t0,false,AVG,bar2_c)==bar2_fname);
-  REQUIRE (find_filename_in_rpointer("foo",true, comm,t0)==foo_fname);
+  REQUIRE (f("bar",false,t0,false,AVG,bar_c)==bar_fname);
+  REQUIRE (f("bar",false,t0,false,AVG,bar2_c)==bar2_fname);
+  REQUIRE (f("my.stream-v1",false,t0,false,AVG,bar_c)==dot_fname); // dots/dashes in stream name
+  REQUIRE (f("my",false,t0,true,AVG,bar_c)==""); // 'my' must not match 'my.stream-v1'
+  REQUIRE (find_filename_in_rpointer("eamxx",true,comm,t0)==foo_fname);
 }
 
 TEST_CASE ("io_control") {

@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: shoc_p3_${POSTFIX}_nudged_remapped
+stream_name: shoc_p3_${POSTFIX}_nudged_remapped
 averaging_type: instant
 vertical_remap_file: vertical_remap.nc
 field_names:

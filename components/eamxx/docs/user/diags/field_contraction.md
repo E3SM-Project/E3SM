@@ -112,7 +112,7 @@ tails as well, add edges beyond any value the field takes, e.g.
 ```yaml
 %YAML 1.1
 ---
-filename_prefix: monthly.outputs
+stream_name: monthly.outputs
 averaging_type: average
 max_snapshots_per_file: 1
 fields:

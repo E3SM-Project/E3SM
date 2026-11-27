@@ -66,7 +66,7 @@ ekat::ParameterList output_params (const std::string& prefix,
                                    const std::string& avg = "INSTANT")
 {
   ekat::ParameterList params;
-  params.set<std::string>("filename_prefix",prefix);
+  params.set<std::string>("stream_name",prefix);
   params.set<std::string>("averaging_type",avg);
   params.set<std::string>("floating_point_precision","real");
 

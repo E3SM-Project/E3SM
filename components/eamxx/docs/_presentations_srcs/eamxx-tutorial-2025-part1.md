@@ -277,7 +277,7 @@ fields:
       - CLDLIQ
       - CLDICE
 max_snapshots_per_file: 1
-filename_prefix: output.scream_monthly.NAME_1
+stream_name: output.scream_monthly.NAME_1
 output_control:
   frequency: 1
   frequency_units: nmonths
@@ -293,7 +293,7 @@ output_control:
 
 The runscript should have copied an output yaml file to the case_scripts directory called `tutorial_output.yaml`
 
-Copy this file to a differently named file, e.g., `tutorial_output_2.yaml` and change options. Be sure to change the `filename_prefix`!
+Copy this file to a differently named file, e.g., `tutorial_output_2.yaml` and change options. Be sure to change the `stream_name`!
 
 Add this new output stream to the run using the atmchange command, then rerun the case.
 

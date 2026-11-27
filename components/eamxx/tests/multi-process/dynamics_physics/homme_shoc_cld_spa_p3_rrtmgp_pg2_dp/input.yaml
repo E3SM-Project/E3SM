@@ -4,6 +4,9 @@ driver_options:
   atmosphere_dag_verbosity_level: 5
   enable_iop: true
 
+e3sm_parameters:
+  e3sm_casename: ${EAMXX_TEST_CASENAME}
+
 iop_options:
   doubly_periodic_mode: true
   iop_file: ${IOP_DATA_DIR}/CASS_iopfile_4scam.nc

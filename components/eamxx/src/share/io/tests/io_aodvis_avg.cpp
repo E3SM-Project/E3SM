@@ -95,7 +95,7 @@ TEST_CASE ("averaged_aodvis")
   const int dt = 1;
 
   ekat::ParameterList params;
-  params.set<std::string>("filename_prefix",prefix);
+  params.set<std::string>("stream_name",prefix);
   params.set<std::string>("averaging_type","AVERAGE");
   params.set<std::string>("floating_point_precision","real");
   auto& f_pl = params.sublist("fields").sublist(gname);

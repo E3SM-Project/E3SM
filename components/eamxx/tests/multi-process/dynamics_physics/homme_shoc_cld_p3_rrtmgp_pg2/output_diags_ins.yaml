@@ -7,7 +7,7 @@
 # example that stops working fails here rather than in a user's yaml.
 #
 # The dt-dependent ones live in output_diags_avg.yaml; see the note at the end.
-filename_prefix: homme_shoc_cld_p3_rrtmgp_pg2_diags_ins
+stream_name: homme_shoc_cld_p3_rrtmgp_pg2_diags_ins
 averaging_type: instant
 fields:
   physics_pg2:
