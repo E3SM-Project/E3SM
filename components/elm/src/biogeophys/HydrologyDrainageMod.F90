@@ -52,7 +52,7 @@ contains
     use elm_varcon       , only : denh2o, denice, secspday, frac_to_downhill
     use elm_varctl       , only : glc_snow_persistence_max_days, use_vichydro, use_betr
     !use domainMod        , only : ldomain
-    use elm_varsur         , only : f_surf
+    use elm_varsur         , only : f_surf, f_fossil
     use TopounitType       , only : top_pp
     use TopounitDataType   , only : top_ws
     use atm2lndType      , only : atm2lnd_type
@@ -338,7 +338,7 @@ contains
          qflx_runoff(c) = qflx_drain(c) + qflx_surf(c)  + qflx_h2osfc_surf(c) + qflx_qrgwl(c) + qflx_drain_perched(c)
 
          if ((col_pp%is_soil(c) .or. col_pp%is_crop(c)) .and. col_pp%active(c)) then
-            qflx_irr_demand(c) = -1.0_r8 * f_surf(g,tpu_ind)*qflx_irrig(c) !surface water demand send to MOSART
+            qflx_irr_demand(c) = -1.0_r8 * (1._r8-f_fossil(g))*f_surf(g,tpu_ind)*qflx_irrig(c) !surface water demand send to MOSART (renewable share only)
          end if
          if (lun_pp%urbpoi(l)) then
             qflx_runoff_u(c) = qflx_runoff(c)

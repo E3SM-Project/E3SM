@@ -381,6 +381,7 @@ module VegetationDataType
     real(r8), pointer :: qflx_real_irrig_patch    (:)   => null()   ! patch real irrigation flux (mm H2O/s)
     real(r8), pointer :: qflx_grnd_irrig_patch    (:)   => null()   ! groundwater irrigation (mm H2O/s)
     real(r8), pointer :: qflx_surf_irrig_patch    (:)   => null()   ! surface water irrigation(mm H2O/s)
+    real(r8), pointer :: qflx_fossil_irrig_patch  (:)   => null()   ! non-renewable groundwater irrigation, external source (mm H2O/s)
     real(r8), pointer :: qflx_supply_patch        (:)   => null()   ! patch supply flux (mm H2O/s)
 
     real(r8), pointer :: qflx_over_supply_patch   (:)   => null()   ! over supplied irrigation
@@ -5455,6 +5456,7 @@ module VegetationDataType
     allocate(this%qflx_real_irrig_patch    (begp:endp))              ; this%qflx_real_irrig_patch    (:)   = spval
     allocate(this%qflx_grnd_irrig_patch    (begp:endp))              ; this%qflx_grnd_irrig_patch    (:)   = spval
     allocate(this%qflx_surf_irrig_patch    (begp:endp))              ; this%qflx_surf_irrig_patch    (:)   = spval
+    allocate(this%qflx_fossil_irrig_patch  (begp:endp))              ; this%qflx_fossil_irrig_patch  (:)   = spval
     allocate(this%qflx_supply_patch        (begp:endp))              ; this%qflx_supply_patch        (:)   = spval
     allocate(this%qflx_over_supply_patch   (begp:endp))              ; this%qflx_over_supply_patch   (:)   = spval
     allocate(this%n_irrig_steps_left       (begp:endp))              ; this%n_irrig_steps_left       (:)   = 0
@@ -5476,6 +5478,11 @@ module VegetationDataType
     call hist_addfld1d (fname='QIRRIG_SURF', units='mm/s', &
         avgflag='A', long_name='Surface water irrigation', &
         ptr_patch=this%qflx_surf_irrig_patch)
+
+    this%qflx_fossil_irrig_patch(begp:endp) = spval
+    call hist_addfld1d (fname='QIRRIG_FOSSIL', units='mm/s', &
+        avgflag='A', long_name='Non-renewable groundwater irrigation (external source)', &
+        ptr_patch=this%qflx_fossil_irrig_patch, default='inactive')
 
     this%qflx_grnd_irrig_patch(begp:endp) = spval
     call hist_addfld1d (fname='QIRRIG_GRND', units='mm/s', &

@@ -527,6 +527,7 @@ module ColumnDataType
 
     real(r8), pointer :: qflx_surf_irrig      (:)   => null() ! col real surface irrigation flux (mm H2O/s)
     real(r8), pointer :: qflx_grnd_irrig      (:)   => null() ! col real groundwater irrigation flux (mm H2O/s)
+    real(r8), pointer :: qflx_fossil_irrig    (:)   => null() ! col non-renewable groundwater irrigation, external source (mm H2O/s)
     real(r8), pointer :: qflx_irrig           (:)   => null() ! col irrigation flux (mm H2O/s)
     real(r8), pointer :: qflx_irr_demand      (:)   => null() ! col surface irrigation demand (mm H2O /s)
     real(r8), pointer :: qflx_over_supply     (:)   => null() ! col over supplied irrigation
@@ -5852,6 +5853,7 @@ contains
     allocate(this%qflx_irrig             (begc:endc))             ; this%qflx_irrig           (:)   = spval
     allocate(this%qflx_surf_irrig        (begc:endc))             ; this%qflx_surf_irrig      (:)   = spval
     allocate(this%qflx_grnd_irrig        (begc:endc))             ; this%qflx_grnd_irrig      (:)   = spval
+    allocate(this%qflx_fossil_irrig      (begc:endc))             ; this%qflx_fossil_irrig    (:)   = spval
     allocate(this%qflx_over_supply       (begc:endc))             ; this%qflx_over_supply     (:)   = spval
     allocate(this%qflx_irr_demand        (begc:endc))             ; this%qflx_irr_demand      (:)   = spval
     allocate(this%qflx_h2orof_drain      (begc:endc))             ; this%qflx_h2orof_drain    (:)   = spval
@@ -6056,6 +6058,7 @@ contains
     this%dwb(begc:endc) = 0._r8
     this%qflx_surf_irrig(begc:endc) = 0._r8
     this%qflx_grnd_irrig(begc:endc) = 0._r8
+    this%qflx_fossil_irrig(begc:endc) = 0._r8
     this%qflx_over_supply(begc:endc) = 0._r8
     this%qflx_h2orof_drain(begc:endc)= 0._r8
     this%qflx_h2oocn_drain(begc:endc)= 0._r8

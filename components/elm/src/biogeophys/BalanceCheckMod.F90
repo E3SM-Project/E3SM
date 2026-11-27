@@ -220,6 +220,7 @@ contains
           qflx_irrig                 =>    col_wf%qflx_irrig              , & ! Input:  [real(r8) (:)   ]  irrigation flux (mm H2O /s)
           qflx_surf_irrig_col        =>    col_wf%qflx_surf_irrig         , & ! Input:  [real(r8) (:)   ]  real surface irrigation flux (mm H2O /s)
           qflx_over_supply_col       =>    col_wf%qflx_over_supply        , & ! Input:  [real(r8) (:)   ]  over supply irrigation flux (mm H2O /s)
+          qflx_fossil_irrig_col      =>    col_wf%qflx_fossil_irrig       , & ! Input:  [real(r8) (:)   ]  non-renewable groundwater irrigation flux (mm H2O /s)
           qflx_snwcp_ice             =>    col_wf%qflx_snwcp_ice          , & ! Input:  [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]`
           qflx_ice_runoff_xs         =>    col_wf%qflx_ice_runoff_xs      , & ! Input:  [real(r8) (:)   ] 
           qflx_evap_tot              =>    col_wf%qflx_evap_tot           , & ! Input:  [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg
@@ -335,7 +336,7 @@ contains
           if (col_pp%active(c)) then
              errh2o(c) = endwb(c) - begwb(c) &
                   - (forc_rain_col(c) + forc_snow_col(c)  + qflx_floodc(c) + qflx_from_uphill(c) &
-                  + qflx_surf_irrig_col(c) + qflx_over_supply_col(c) &
+                  + qflx_surf_irrig_col(c) + qflx_over_supply_col(c) + qflx_fossil_irrig_col(c) &
                   - qflx_evap_tot(c) - qflx_surf(c)  - qflx_h2osfc_surf(c) - qflx_to_downhill(c) &
                   - qflx_qrgwl(c) - qflx_drain(c) - qflx_drain_perched(c) - qflx_snwcp_ice(c) - qflx_ice_runoff_xs(c) &
                   - qflx_lateral(c) + qflx_h2orof_drain(c) - qflx_lnd2ocn(c) + qflx_h2oocn_drain(c)) * dtime

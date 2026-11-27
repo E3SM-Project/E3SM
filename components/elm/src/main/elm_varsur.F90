@@ -58,6 +58,7 @@ module elm_varsur
   real(r8),pointer :: firrig(:,:) 
   real(r8),pointer :: f_surf(:,:)  ! fraction of water withdraws from surfacewater
   real(r8),pointer :: f_grd(:,:)   ! fraction of water withdraws from groundwater
+  real(r8),pointer :: f_fossil(:)  ! share of irrigation demand met from non-renewable groundwater (external)
   !-----------------------------------------------------------------------
 
 end module elm_varsur

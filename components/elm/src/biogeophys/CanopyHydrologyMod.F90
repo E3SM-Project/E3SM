@@ -118,7 +118,7 @@ contains
      use landunit_varcon    , only : istcrop, istice, istwet, istsoil, istice_mec, istdlak
      use elm_varctl         , only : subgridflag
      use elm_varpar         , only : nlevsoi,nlevsno
-     use elm_varsur         , only : wt_lunit, f_grd, f_surf
+     use elm_varsur         , only : wt_lunit, f_grd, f_surf, f_fossil
      use atm2lndType        , only : atm2lnd_type
      !use domainMod          , only : ldomain
      use TopounitType       , only : top_pp
@@ -243,6 +243,8 @@ contains
           qflx_real_irrig      => veg_wf%qflx_real_irrig_patch     , & ! Output: [real(r8) (:)   ]  actual irrigation amount (mm/s)      
           qflx_surf_irrig_col  => col_wf%qflx_surf_irrig       , & ! Output: [real(r8) (:)   ]  col real surface water irrigation flux (mm H2O /s)  
           qflx_grnd_irrig_col  => col_wf%qflx_grnd_irrig       , & ! Output: [real(r8) (:)   ]  col real groundwater irrigation flux (mm H2O /s)          
+          qflx_fossil_irrig_col => col_wf%qflx_fossil_irrig    , & ! Output: [real(r8) (:)   ]  col non-renewable groundwater irrigation flux (mm H2O /s)
+          qflx_fossil_irrig    => veg_wf%qflx_fossil_irrig_patch   , & ! Output: [real(r8) (:)   ]  non-renewable groundwater irrigation, external source (mm/s)
           qflx_over_supply_col => col_wf%qflx_over_supply      , & ! Output: [real(r8) (:)   ]  over supply irrigation flux (mm H2O /s)          
           qflx_supply          => veg_wf%qflx_supply_patch         , & ! Output: [real(r8) (:)   ]  irrigation supply (mm/s)      
           qflx_surf_irrig      => veg_wf%qflx_surf_irrig_patch     , & ! Output: [real(r8) (:)   ]  actual surface water irrigation (mm/s)      
@@ -378,6 +380,8 @@ contains
              qflx_irrig_grid(g) = 0._r8
           end if
 
+          qflx_fossil_irrig(p) = 0._r8
+
           ! Add irrigation water directly onto ground (bypassing canopy interception)
           ! Note that it's still possible that (some of) this irrigation water will runoff (as runoff is computed later)
           if(irrigate) then          
@@ -395,21 +399,24 @@ contains
                if (qflx_irrig(p) > 0._r8 .or. qflx_supply(p) > 0._r8) then	!this pft needs water or have supply             
                   if  (irrigated(veg_pp%itype(p)) == 1._r8) then ! this pft is irrigated
                      qflx_surf_irrig(p) = qflx_supply(p)/irrigated_ppg(g)  ! surface water irrgation from MOSART, with time step shift                   
-                     qflx_grnd_irrig(p) = f_grd(g,tpu_ind)*qflx_irrig(p) ! groundwater irrigation based on demand in ELM, same time step
+                     ! non-renewable share f_fossil of the demand: always met, from outside the ELM and MOSART stores;
+                     ! the renewable share (1-f_fossil) is split between MOSART (f_surf) and the aquifer (f_grd)
+                     qflx_fossil_irrig(p) = f_fossil(g)*qflx_irrig(p)
+                     qflx_grnd_irrig(p) = (1._r8-f_fossil(g))*f_grd(g,tpu_ind)*qflx_irrig(p) ! groundwater irrigation based on demand in ELM, same time step
                      
                      if (extra_gw_irr) then ! if always met by additional extra gw pumping
                         if (qflx_supply(p) > 0._r8) then				
                            if (pgwgt(p) > 0._r8) then	 
-                              qflx_grnd_irrig(p) = atm2lnd_vars%deficit_grc(g)/pgwgt(p)/irrigated_ppg(g) + f_grd(g,tpu_ind)*qflx_irrig(p)
+                              qflx_grnd_irrig(p) = atm2lnd_vars%deficit_grc(g)/pgwgt(p)/irrigated_ppg(g) + (1._r8-f_fossil(g))*f_grd(g,tpu_ind)*qflx_irrig(p)
                               !groundwater irrigation based on deficit from MOSART (with time step shift), not demand from ELM
                            end if
                         else if (qflx_irrig(p) > 0._r8) then
-                           qflx_grnd_irrig(p) = f_grd(g,tpu_ind)*qflx_irrig(p)
+                           qflx_grnd_irrig(p) = (1._r8-f_fossil(g))*f_grd(g,tpu_ind)*qflx_irrig(p)
                         else
                            qflx_grnd_irrig(p) = 0._r8
                         endif	
                      endif			   
-                     qflx_real_irrig(p) = qflx_surf_irrig(p) + qflx_grnd_irrig(p) ! actual irrigation, including groundwater irrigation
+                     qflx_real_irrig(p) = qflx_surf_irrig(p) + qflx_grnd_irrig(p) + qflx_fossil_irrig(p) ! actual irrigation, including groundwater and non-renewable irrigation
                      qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_real_irrig(p)   
                   end if		
                end if       
@@ -477,6 +484,10 @@ contains
        call p2c(bounds, num_nolakec, filter_nolakec, &      
             qflx_grnd_irrig(bounds%begp:bounds%endp), &
             qflx_grnd_irrig_col(bounds%begc:bounds%endc))
+
+       call p2c(bounds, num_nolakec, filter_nolakec, &
+            qflx_fossil_irrig(bounds%begp:bounds%endp), &
+            qflx_fossil_irrig_col(bounds%begc:bounds%endc))
 
        ! apply gridcell flood water flux to non-lake columns
        do f = 1, num_nolakec

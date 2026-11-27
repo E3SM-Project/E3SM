@@ -29,6 +29,7 @@ module dynSubgridDriverMod
   use dynLandunitAreaMod  , only : update_landunit_weights
   use CropType            , only : crop_type
   use dyncropFileMod      , only : dyncrop_init, dyncrop_interp
+  use dynFossilIrrigMod   , only : dynFossilIrrig_init, dynFossilIrrig_interp
   use filterMod           , only : filter, filter_inactive_and_active
 
   use GridcellDataType    , only : gridcell_carbon_state, gridcell_carbon_flux
@@ -126,6 +127,9 @@ contains
     if (get_do_transient_crops()) then
        call dyncrop_init(bounds, dyncrop_filename=get_flanduse_timeseries())
     end if
+
+    ! Non-renewable irrigation share (own file; no-op without fossil_irrig_file)
+    call dynFossilIrrig_init(bounds)
 
     ! Initialize for iac instead of files
     if (iac_present) then
@@ -269,6 +273,8 @@ contains
     if (get_do_transient_crops()) then
        call dyncrop_interp(bounds_proc,crop_vars)
     end if
+
+    call dynFossilIrrig_interp(bounds_proc)
 
     if (get_do_harvest() .or. fates_harvest_mode == fates_harvest_hlmlanduse) then
        call dynHarvest_interp_harvest_types(bounds_proc)

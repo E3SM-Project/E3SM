@@ -208,6 +208,13 @@ Only effective when tw_irr is TRUE. If TRUE, extra groundwater pumping will be p
 surface water irrigation supply will still be constrained by surface water availability from MOSART
 </entry>
 
+<entry id="fossil_irrig_file" type="char*256" category="datasets"
+       group="elm_inparm" valid_values="" >
+File with the time-varying share of irrigation demand met from non-renewable (fossil) groundwater:
+F_NONREN(time,lsmlat,lsmlon), fraction 0-1, with YEAR(time). Only used when tw_irr is TRUE. That share of the
+demand is always met from an external source and is not requested from MOSART. Blank = no fossil water.
+</entry>
+
 <entry id="firrig_data" type="logical" category="elm_physics"
        group="elm_inparm"  >
 If TRUE, Firrig, Fsurf, and Fgrnd will be read from the ELM surface data.

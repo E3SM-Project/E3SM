@@ -14,6 +14,7 @@ module elm_initializeMod
   use elm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14
   use elm_varctl       , only : use_fates, use_betr, use_fates_sp, use_fan, use_fates_luh, use_finetop_rad
   use elm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec,firrig,f_surf,f_grd
+  use elm_varsur       , only : f_fossil
   use elm_varsur       , only : fert_cft, fert_p_cft, wt_polygon
   use elm_varsur       , only : wt_tunit, elv_tunit, slp_tunit,asp_tunit,num_tunit_per_grd
   use perf_mod         , only : t_startf, t_stopf
@@ -329,6 +330,8 @@ contains
     allocate (firrig  (begg:endg,1:max_topounits  ))
     allocate (f_surf  (begg:endg,1:max_topounits  ))
     allocate (f_grd  (begg:endg,1:max_topounits  ))
+    allocate (f_fossil (begg:endg))
+    f_fossil(:) = 0._r8
 
     ! Read list of Patches and their corresponding parameter values
     ! Independent of model resolution, Needs to stay before surfrd_get_data

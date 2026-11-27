@@ -61,7 +61,7 @@ module controlMod
                         glcmec_downscale_rain_snow_convert, &
                         glcmec_downscale_longwave, glc_snow_persistence_max_days, &
                         wrtdia, create_crop_landunit, nsegspc, co2_ppmv, &
-                        subgridflag, irrigate, tw_irr, extra_gw_irr, &
+                        subgridflag, irrigate, tw_irr, extra_gw_irr, fossil_irrig_file, &
                         firrig_data, all_active, mpi_sync_nstep_freq, &
                         use_c13, use_c14, fates_paramfile, use_fates, &
                         use_betr, use_lai_streams, metdata_type, metdata_bypass, &
@@ -276,7 +276,7 @@ contains
          clump_pproc, wrtdia, &
          create_crop_landunit, nsegspc, co2_ppmv, override_nsrest, &
          albice, more_vertlayers, subgridflag, irrigate, tw_irr, extra_gw_irr, firrig_data, all_active, &
-         mpi_sync_nstep_freq
+         mpi_sync_nstep_freq, fossil_irrig_file
     ! Urban options
 
     namelist /elm_inparm/  &
@@ -833,6 +833,7 @@ contains
     call mpi_bcast(irrigate, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast(tw_irr, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast(extra_gw_irr, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast(fossil_irrig_file, len(fossil_irrig_file), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast(firrig_data, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! Landunit generation
@@ -1133,6 +1134,7 @@ contains
     write(iulog,*) '    use_crop = ', use_crop
     write(iulog,*) '    irrigate = ', irrigate
     write(iulog,*) '    two-way irrigation = ', tw_irr
+    write(iulog,*) '    fossil_irrig_file = ', trim(fossil_irrig_file)
     write(iulog,*) '    use_snicar_frc = ', use_snicar_frc
     write(iulog,*) '    use_snicar_ad = ', use_snicar_ad
     write(iulog,*) '    snow_shape = ', snow_shape

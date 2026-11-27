@@ -140,6 +140,10 @@ module elm_varctl
   ! True is extra pumping, false is stick with the gw fraction
   logical, public :: extra_gw_irr = .false.
 
+  ! file with the time-varying share of irrigation demand met from non-renewable (fossil)
+  ! groundwater, variable F_NONREN(time,lsmlat,lsmlon); blank = no fossil water
+  character(len=fname_len), public :: fossil_irrig_file = ' '
+
   !----------------------------------------------------------
   ! FIRRIG data
   !----------------------------------------------------------
