@@ -69,8 +69,10 @@ void Functions<S,D>::compute_tms(
       // sheared stable conditions so TMS drag is not fully shut off
       const auto dv2 = ekat::impl::max(tmp_u*tmp_u + tmp_v*tmp_v, ri_shear_sqr_min);
 
-      const auto ri  = 2*gravit*(t_mid_i(kt)*exner_i(kt) - t_mid_i(kb)*exner_i(kb))*(z_mid_i(kt) - z_mid_i(kb))/
-                      ((t_mid_i(kt)*exner_i(kt) + t_mid_i(kb)*exner_i(kb))*dv2);
+      const auto theta_top = t_mid_i(kt)/exner_i(kt);
+      const auto theta_bot = t_mid_i(kb)/exner_i(kb);
+      const auto ri = 2*gravit*(theta_top - theta_bot)*(z_mid_i(kt) - z_mid_i(kb))/
+                     ((theta_top + theta_bot)*dv2);
 
       // Calculate the instability function and modify the neutral drag cofficient.
       // We should probably follow more elegant approach like Louis et al (1982) or

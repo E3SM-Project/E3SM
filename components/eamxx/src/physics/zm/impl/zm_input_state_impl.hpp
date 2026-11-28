@@ -134,12 +134,14 @@ void Functions<S,D>::ZmInputState::calculate_tpert(int ncol, int nlev, bool is_f
         // PBL top index not found, so just set the perturbation to zero
         loc_tpert(i) = 0;
       } else {
-        // calculate tpert as std deviation of temperature from SHOC's theta-l variance
+        // calculate tpert as std deviation of temperature from SHOC's theta-l variance.
+        // T = theta*exner, with exner = (p/p0)^kappa. Note: EAM divides by
+        // state%exner here, but that field holds the inverse exner function.
         auto exner_pbl    = PF::exner_function( loc_p_mid(i,pblh_k_ind) );
         auto qc_pbl       = loc_qc(i,pblh_k_ind);
         auto thl_sec_pbl  = loc_thl_sec(i,pblh_k_ind);
         auto thl_std_pbl  = sqrt( thl_sec_pbl ); // std deviation of thetal;
-        loc_tpert(i) = ( thl_std_pbl + (latvap/cpair)*qc_pbl ) / exner_pbl;
+        loc_tpert(i) = ( thl_std_pbl + (latvap/cpair)*qc_pbl ) * exner_pbl;
         loc_tpert(i) = Kokkos::min(tpert_limiter, loc_tpert(i)); // apply limiter
       }
     }
