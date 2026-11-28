@@ -41,6 +41,10 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
   // Get simulation params
   SimulationParams& params = context.get<SimulationParams>();
 
+  auto& limiter = context.get<LimiterFunctor>();
+  limiter.m_nstep = tl.nstep;
+  limiter.m_step_start_seconds = tl.nstep*dt;
+
   // Determine the tracers time level
   tl.update_tracers_levels(params.dt_tracer_factor);
 
@@ -309,7 +313,7 @@ void ttype9_imex_timestep(const TimeLevel& tl,
     }
   }
   Kokkos::fence();
-  limiter.run(np1);
+  limiter.run(np1, n0);
 
   Real a1 = 5.0*dt_dyn/18.0;
   Real a2 = dt_dyn/36.0;
